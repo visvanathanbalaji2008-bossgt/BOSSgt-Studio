@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --background: #09090b; /* Zinc 950 */
+  --foreground: #fafafa; /* Zinc 50 */
+  
+  --panel-bg: #18181b; /* Zinc 900 */
+  --panel-border: #27272a; /* Zinc 800 */
+  
+  --accent: #6366f1; /* Indigo 500 */
+  --accent-hover: #4f46e5; /* Indigo 600 */
+  
+  --activity-bar-bg: #09090b; /* Zinc 950 */
+  --sidebar-bg: #18181b; /* Zinc 900 */
+  --editor-bg: #09090b; /* Zinc 950 - match background */
+  --status-bar-bg: #6366f1; /* Indigo 500 */
+  --status-bar-fg: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: var(--panel-bg);
+  --color-panel-border: var(--panel-border);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-activity-bar: var(--activity-bar-bg);
+  --color-sidebar: var(--sidebar-bg);
+  --color-editor: var(--editor-bg);
+  --color-status-bar: var(--status-bar-bg);
+  --color-status-bar-fg: var(--status-bar-fg);
+  
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  @apply overflow-hidden antialiased;
+}
+
+::selection {
+  background-color: rgba(99, 102, 241, 0.3); /* accent/30 */
+}
+
+/* Custom scrollbar for webkit */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #3f3f46; /* Zinc 700 */
+  border-radius: 6px;
+  border: 3px solid var(--sidebar-bg); /* Match sidebar background to look floating */
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #52525b; /* Zinc 600 */
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
