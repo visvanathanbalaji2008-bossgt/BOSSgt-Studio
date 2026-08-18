@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import Editor from "@monaco-editor/react";
+import { Check, Columns, ChevronsRight } from "lucide-react";
 
 interface CodeEditorProps {
   value: string;
@@ -10,17 +11,49 @@ interface CodeEditorProps {
   theme?: string;
 }
 
-export function CodeEditor({ 
-  value, 
-  onChange, 
+// Detect conflict markers
+const conflictRegex = /<<<<<<< HEAD\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> [^\n]*/;
+
+export function CodeEditor({
+  value,
+  onChange,
   language,
   theme = "vs-dark"
 }: CodeEditorProps) {
-  
-  // Future configurations can be handled here if needed
+
+  const hasConflict = useMemo(() => conflictRegex.test(value), [value]);
+
+  const resolveConflict = (strategy: "current" | "incoming" | "both") => {
+    const match = value.match(conflictRegex);
+    if (!match) return;
+
+    const [fullMatch, current, incoming] = match;
+    let replacement = "";
+    if (strategy === "current") replacement = current;
+    if (strategy === "incoming") replacement = incoming;
+    if (strategy === "both") replacement = `${current}\n${incoming}`;
+
+    const newValue = value.replace(fullMatch, replacement);
+    onChange(newValue);
+  };
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full flex flex-col">
+      {hasConflict && (
+        <div className="flex items-center gap-4 bg-red-900/20 px-4 py-2 border-b border-red-900/50">
+          <span className="text-red-400 text-sm font-semibold flex-1">Merge Conflict Detected (Resolving first occurrence)</span>
+          <button onClick={() => resolveConflict("current")} className="flex items-center gap-1.5 px-3 py-1 bg-white/5 hover:bg-white/10 rounded text-xs text-foreground/80 transition-colors">
+            <Check size={14} /> Accept Current
+          </button>
+          <button onClick={() => resolveConflict("incoming")} className="flex items-center gap-1.5 px-3 py-1 bg-white/5 hover:bg-white/10 rounded text-xs text-foreground/80 transition-colors">
+            <Columns size={14} /> Accept Incoming
+          </button>
+          <button onClick={() => resolveConflict("both")} className="flex items-center gap-1.5 px-3 py-1 bg-white/5 hover:bg-white/10 rounded text-xs text-foreground/80 transition-colors">
+            <ChevronsRight size={14} /> Accept Both
+          </button>
+        </div>
+      )}
+      <div className="flex-1 w-full relative">
       <Editor
         height="100%"
         width="100%"
@@ -49,6 +82,7 @@ export function CodeEditor({
           </div>
         }
       />
+      </div>
     </div>
   );
 }

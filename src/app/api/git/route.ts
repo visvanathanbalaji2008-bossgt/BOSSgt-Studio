@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
         const { stdout: statusOut } = await runGit("git status --porcelain");
         const lines = statusOut.split("\n").filter(Boolean);
-        
+
         const changes = lines.map(line => {
           const staging = line.charAt(0);
           const working = line.charAt(1);
@@ -123,11 +123,79 @@ export async function POST(req: Request) {
         }
       }
 
+      // Remote operations
+      case "remotes": {
+        try {
+          const { stdout } = await runGit("git remote -v");
+          // Parse first remote url
+          const match = stdout.match(/origin\s+(https:\/\/[^\s]+)\s+\(fetch\)/);
+          return NextResponse.json({ remote: match ? match[1] : null });
+        } catch {
+          return NextResponse.json({ remote: null });
+        }
+      }
+
+      case "addRemote": {
+        try {
+          await runGit(`git remote add origin "${payload.url}"`);
+        } catch {
+          await runGit(`git remote set-url origin "${payload.url}"`);
+        }
+        return NextResponse.json({ success: true });
+      }
+
+      case "aheadBehind": {
+        try {
+          const { stdout } = await runGit("git rev-list --left-right --count HEAD...@{u}");
+          const [ahead, behind] = stdout.split(/\s+/).map(Number);
+          return NextResponse.json({ ahead, behind });
+        } catch {
+          return NextResponse.json({ ahead: 0, behind: 0 }); // No upstream or error
+        }
+      }
+
+      case "fetch": {
+        const cmd = payload.token && payload.url
+          ? `git fetch "${payload.url.replace(/^https:\/\//, `https://${payload.token}@`)}"`
+          : "git fetch";
+        await runGit(cmd);
+        return NextResponse.json({ success: true });
+      }
+
+      case "pull": {
+        const cmd = payload.token && payload.url && payload.branch
+          ? `git pull "${payload.url.replace(/^https:\/\//, `https://${payload.token}@`)}" ${payload.branch}`
+          : `git pull`;
+        // We use --no-rebase or default pull strategy. If there's a conflict, git will exit with error but leave UU files.
+        try {
+          await runGit(cmd);
+          return NextResponse.json({ success: true });
+        } catch (error: unknown) {
+          const err = error as { message?: string };
+          // If conflict occurs, it's still technically a "success" from the workflow perspective, the user just needs to resolve.
+          if (err.message?.includes("Automatic merge failed") || err.message?.includes("CONFLICT")) {
+            return NextResponse.json({ success: true, conflict: true });
+          }
+          throw error;
+        }
+      }
+
+      case "push": {
+        const cmd = payload.token && payload.url && payload.branch
+          ? `git push "${payload.url.replace(/^https:\/\//, `https://${payload.token}@`)}" ${payload.branch}`
+          : `git push`;
+        await runGit(cmd);
+        return NextResponse.json({ success: true });
+      }
+
       default:
         return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
   } catch (error: unknown) {
-    const errMessage = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: errMessage }, { status: 500 });
+    const err = error as { message?: string };
+    const errMessage = error instanceof Error ? error.message : (err?.message || "Unknown error");
+    // Ensure we don't leak token in error messages
+    const safeError = errMessage.replace(/https:\/\/[^@]+@/g, "https://***@");
+    return NextResponse.json({ error: safeError }, { status: 500 });
   }
 }

@@ -22,6 +22,22 @@ export function useWorkspace() {
   const [fileTree, setFileTree] = useState<FileNode[]>([]);
   const [openFiles, setOpenFiles] = useState<OpenFile[]>([]);
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
+  const [githubToken, setGithubTokenState] = useState<string>("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("bossgt_github_token");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (token) setGithubTokenState(token);
+  }, []);
+
+  const setGithubToken = useCallback((token: string) => {
+    if (token) {
+      localStorage.setItem("bossgt_github_token", token);
+    } else {
+      localStorage.removeItem("bossgt_github_token");
+    }
+    setGithubTokenState(token);
+  }, []);
 
   const fetchTree = useCallback(async () => {
     try {
@@ -52,7 +68,7 @@ export function useWorkspace() {
       if (res.ok) {
         const { content } = await res.json();
         const langConfig = getLanguageByExtension(name);
-        
+
         const newFile: OpenFile = {
           path,
           name,
@@ -61,7 +77,7 @@ export function useWorkspace() {
           languageId: langConfig.id,
           mode: 'edit'
         };
-        
+
         setOpenFiles(prev => [...prev, newFile]);
         setActiveFilePath(path);
       }
@@ -83,7 +99,7 @@ export function useWorkspace() {
       if (fsRes.ok) {
         const { content: modifiedContent } = await fsRes.json();
         const langConfig = getLanguageByExtension(name);
-        
+
         const diffPath = `diff://${path}`;
         const newFile: OpenFile = {
           path: diffPath,
@@ -94,7 +110,7 @@ export function useWorkspace() {
           mode: 'diff',
           languageId: langConfig.id
         };
-        
+
         setOpenFiles(prev => {
           const filtered = prev.filter(f => f.path !== diffPath);
           return [...filtered, newFile];
@@ -189,7 +205,7 @@ export function useWorkspace() {
       console.error(error);
     }
   }, [fetchTree, closeFile]);
-  
+
   const updateActiveLanguage = useCallback((langId: string) => {
     if (!activeFilePath) return;
     setOpenFiles(prev => prev.map(f => f.path === activeFilePath ? { ...f, languageId: langId } : f));
@@ -208,6 +224,8 @@ export function useWorkspace() {
     deletePath,
     renamePath,
     updateActiveLanguage,
-    openDiff
+    openDiff,
+    githubToken,
+    setGithubToken
   };
 }
