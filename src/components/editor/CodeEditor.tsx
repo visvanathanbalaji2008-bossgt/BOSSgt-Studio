@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo } from "react";
-import Editor from "@monaco-editor/react";
+import React, { useMemo, useRef, useEffect } from "react";
+import Editor, { OnMount } from "@monaco-editor/react";
 import { Check, Columns, ChevronsRight } from "lucide-react";
+import type { editor } from "monaco-editor";
 
 interface CodeEditorProps {
   value: string;
@@ -20,6 +21,21 @@ export function CodeEditor({
   language,
   theme = "vs-dark"
 }: CodeEditorProps) {
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+
+  useEffect(() => {
+    const handleGoToLine = (e: Event) => {
+      const customEvent = e as CustomEvent<{ file: string, line: number }>;
+      if (editorRef.current) {
+        editorRef.current.revealLineInCenter(customEvent.detail.line);
+        editorRef.current.setPosition({ lineNumber: customEvent.detail.line, column: 1 });
+        editorRef.current.focus();
+      }
+    };
+
+    window.addEventListener('editor-goto-line', handleGoToLine);
+    return () => window.removeEventListener('editor-goto-line', handleGoToLine);
+  }, []);
 
   const hasConflict = useMemo(() => conflictRegex.test(value), [value]);
 
@@ -61,6 +77,9 @@ export function CodeEditor({
         theme={theme}
         value={value}
         onChange={onChange}
+        onMount={(editor) => {
+          editorRef.current = editor;
+        }}
         options={{
           minimap: { enabled: true },
           fontSize: 14,

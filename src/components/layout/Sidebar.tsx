@@ -3,7 +3,8 @@ import {
   Files, Search, GitBranch, Blocks,
   ChevronRight, ChevronDown, FileCode, FolderOpen,
   Plus, FolderPlus, Trash2, Edit2, File as FileIcon,
-  Cloud, RefreshCw, Upload, Download, AlertTriangle
+  Cloud, RefreshCw, Upload, Download, AlertTriangle,
+  Replace, ReplaceAll
 } from "lucide-react";
 import { useWorkspace, FileNode } from "@/hooks/useWorkspace";
 
@@ -59,7 +60,13 @@ export function Sidebar({ workspace }: SidebarProps) {
           </div>
         )}
 
-        {activeTab !== "explorer" && activeTab !== "source-control" && (
+        {activeTab === "search" && workspace && (
+          <div className="flex-1 overflow-y-auto">
+            <SearchPanel workspace={workspace} />
+          </div>
+        )}
+
+        {activeTab !== "explorer" && activeTab !== "source-control" && activeTab !== "search" && (
           <div className="p-4 text-xs text-foreground/50 text-center">
             Placeholder for {activeTab} functionality.
           </div>
@@ -525,6 +532,150 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SearchPanel({ workspace }: { workspace: ReturnType<typeof useWorkspace> }) {
+  const [query, setQuery] = useState("");
+  const [replaceWith, setReplaceWith] = useState("");
+  const [matchCase, setMatchCase] = useState(false);
+  const [isRegex, setIsRegex] = useState(false);
+  const [results, setResults] = useState<{file: string, line: number, text: string}[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleSearch = async () => {
+    if (!query) {
+      setResults([]);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const res = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "search", query, isRegex, matchCase })
+      });
+      const data = await res.json();
+      setResults(data.results || []);
+    } catch (e) {
+      console.error("Search error", e);
+    }
+    setIsSearching(false);
+  };
+
+  const handleReplace = async (filePaths: string[]) => {
+    if (!query || filePaths.length === 0) return;
+    try {
+      const res = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "replace", query, replaceWith, isRegex, matchCase, filePaths })
+      });
+      const data = await res.json();
+      if (data.success) {
+        handleSearch();
+      }
+    } catch (e) {
+      console.error("Replace error", e);
+    }
+  };
+
+  const grouped = results.reduce((acc, curr) => {
+    if (!acc[curr.file]) acc[curr.file] = [];
+    acc[curr.file].push(curr);
+    return acc;
+  }, {} as Record<string, typeof results>);
+
+  return (
+    <div className="flex flex-col h-full font-sans p-3">
+      <div className="flex flex-col gap-2 mb-4">
+        <div className="relative flex items-center bg-background border border-panel-border rounded focus-within:border-accent">
+          <input
+            type="text"
+            placeholder="Search"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSearch()}
+            className="w-full bg-transparent p-1.5 text-xs text-foreground placeholder:text-foreground/40 outline-none"
+          />
+          <div className="flex items-center gap-1 pr-1">
+            <button 
+              onClick={() => setMatchCase(!matchCase)} 
+              className={`p-0.5 rounded text-xs font-mono font-bold transition-colors ${matchCase ? 'bg-accent/20 text-accent' : 'text-foreground/50 hover:text-foreground'}`}
+              title="Match Case"
+            >Aa</button>
+            <button 
+              onClick={() => setIsRegex(!isRegex)} 
+              className={`p-0.5 rounded text-xs font-mono font-bold transition-colors ${isRegex ? 'bg-accent/20 text-accent' : 'text-foreground/50 hover:text-foreground'}`}
+              title="Use Regular Expression"
+            >.*</button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 bg-background border border-panel-border rounded focus-within:border-accent">
+          <input
+            type="text"
+            placeholder="Replace"
+            value={replaceWith}
+            onChange={e => setReplaceWith(e.target.value)}
+            className="w-full bg-transparent p-1.5 text-xs text-foreground placeholder:text-foreground/40 outline-none"
+          />
+          <button 
+            onClick={() => handleReplace(Object.keys(grouped))}
+            className="p-1 text-foreground/50 hover:text-foreground rounded transition-colors mr-1"
+            title="Replace All"
+          >
+            <ReplaceAll size={14} />
+          </button>
+        </div>
+        
+        <button 
+          onClick={handleSearch}
+          disabled={isSearching || !query}
+          className="w-full py-1.5 bg-accent text-white rounded text-xs font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
+        >
+          {isSearching ? "Searching..." : "Search"}
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto -mx-3">
+        {Object.entries(grouped).map(([file, lines]) => (
+          <div key={file} className="mb-2">
+            <div className="px-3 py-1 flex items-center justify-between text-xs font-semibold text-foreground/80 bg-white/5">
+              <span className="truncate">{file}</span>
+              <div className="flex items-center gap-1">
+                <span className="px-1.5 py-0.5 bg-white/10 rounded-full text-[10px]">{lines.length}</span>
+                <button 
+                  onClick={() => handleReplace([file])}
+                  className="p-1 hover:bg-white/20 rounded text-foreground/70"
+                  title="Replace in file"
+                >
+                  <Replace size={12} />
+                </button>
+              </div>
+            </div>
+            {lines.map((res, i) => (
+              <div 
+                key={i} 
+                className="px-3 py-1 text-[11px] font-mono text-foreground/60 hover:bg-white/5 hover:text-foreground cursor-pointer flex gap-2 truncate"
+                onClick={() => {
+                  workspace.openFile(file, file.split('/').pop() || file);
+                  window.dispatchEvent(new CustomEvent('editor-goto-line', { detail: { file, line: res.line }}));
+                }}
+              >
+                <span className="text-accent/70 shrink-0">{res.line}</span>
+                <span className="truncate">{res.text.trim()}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+        {query && results.length === 0 && !isSearching && (
+          <div className="px-3 py-4 text-center text-xs text-foreground/50">
+            No results found.
           </div>
         )}
       </div>
