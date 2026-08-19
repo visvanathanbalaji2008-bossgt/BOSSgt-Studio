@@ -1,151 +1,172 @@
-import { NextResponse } from 'next/server';
-import cp from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import { NextRequest, NextResponse } from "next/server";
+import { getLanguageById } from "@/components/editor/editor-config";
+import { rateLimit } from "@/lib/rate-limit";
 
-export interface ExecutionResult {
-  stdout: string;
-  stderr: string;
-  exitCode: number | null;
-  timeMs: number;
-}
+// Force Node.js runtime for this route
+export const runtime = "nodejs";
 
-// Helper to spawn processes and handle timeouts, capturing outputs.
-// By doing cp.spawn, we sometimes bypass strict static analysis from Turbopack.
-function executeProcess(cmd: string, args: string[], timeoutMs: number): Promise<ExecutionResult> {
-  return new Promise((resolve) => {
-    const startTime = performance.now();
-    
-    // We assign to a new variable to try and break Turbopack's static analysis tracing
-    const executable = String(cmd);
-    const child = cp.spawn(executable, args);
-    
-    let stdoutData = "";
-    let stderrData = "";
+const MAX_CODE_LENGTH = 65536; // 64KB max source size
+const JUDGE0_API_URL = process.env.JUDGE0_API_URL || "https://ce.judge0.com";
+const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10);
+const RATE_LIMIT_WINDOW = parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10);
 
-    const timeout = setTimeout(() => {
-      child.kill('SIGTERM');
-      const endTime = performance.now();
-      resolve({
-        stdout: stdoutData,
-        stderr: stderrData + `\n[Execution Error]: Process timed out after ${timeoutMs}ms`,
-        exitCode: 124,
-        timeMs: Math.round(endTime - startTime)
-      });
-    }, timeoutMs);
-
-    child.stdout.on('data', (data) => {
-      stdoutData += data.toString();
-    });
-
-    child.stderr.on('data', (data) => {
-      stderrData += data.toString();
-    });
-
-    child.on('close', (code) => {
-      clearTimeout(timeout);
-      const endTime = performance.now();
-      resolve({
-        stdout: stdoutData,
-        stderr: stderrData,
-        exitCode: code,
-        timeMs: Math.round(endTime - startTime)
-      });
-    });
-
-    child.on('error', (err) => {
-      clearTimeout(timeout);
-      const endTime = performance.now();
-      resolve({
-        stdout: stdoutData,
-        stderr: stderrData + "\n[Server Error]: " + err.message,
-        exitCode: 1,
-        timeMs: Math.round(endTime - startTime)
-      });
-    });
-  });
-}
-
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
+    // 1. Rate Limiting (Abuse Protection)
+    const ip = req.headers.get("x-forwarded-for") || req.ip || "127.0.0.1";
+    const rateLimitResult = rateLimit(ip, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW);
+    
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ 
+        error: "Rate Limit Exceeded",
+        details: "You are making too many execution requests. Please wait a moment."
+      }, { 
+        status: 429,
+        headers: {
+          "X-RateLimit-Limit": RATE_LIMIT_MAX.toString(),
+          "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+          "X-RateLimit-Reset": rateLimitResult.reset.toString()
+        }
+      });
+    }
+
+    // 2. Body parsing and validation
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
+    }
+
     const { code, language } = body;
 
-    if (!code) {
-      return NextResponse.json({ error: "No code provided" }, { status: 400 });
+    if (!code || typeof code !== "string") {
+      return NextResponse.json({ error: "No code provided or invalid format" }, { status: 400 });
     }
 
-    // IMPORTANT SECURITY NOTICE:
-    // This is a local-development-only execution endpoint. 
-    // It is insecure to run arbitrary code on a server without isolation.
-    // In production, this must be replaced by a secure sandbox (e.g., Docker, gVisor).
+    if (code.length > MAX_CODE_LENGTH) {
+      return NextResponse.json({ error: "Source code exceeds maximum allowed size (64KB)" }, { status: 400 });
+    }
 
-    const tempDir = os.tmpdir();
-    const sessionId = Date.now().toString() + Math.floor(Math.random() * 1000).toString();
-    let result: ExecutionResult;
+    if (!language || typeof language !== "string") {
+      return NextResponse.json({ error: "No language provided or invalid format" }, { status: 400 });
+    }
 
-    if (language === "python" || language === "javascript") {
-      const ext = language === "python" ? ".py" : ".js";
-      const bin = language === "python" ? "python3" : "node";
-      const tempFile = path.join(tempDir, `bossgt_exec_${sessionId}${ext}`);
-      
-      fs.writeFileSync(tempFile, code, 'utf-8');
-      
-      result = await executeProcess(bin, [tempFile], 5000);
-      
-      fs.unlink(tempFile, () => {});
-      return NextResponse.json(result);
-    } 
+    const langConfig = getLanguageById(language);
     
-    else if (language === "c" || language === "cpp") {
-      const ext = language === "c" ? ".c" : ".cpp";
-      const compilerBin = language === "c" ? "clang" : "clang++";
+    // Validate language via allowlist (config)
+    if (!langConfig || langConfig.executionStatus !== "READY") {
+      return NextResponse.json({ 
+        error: "Execution Request Failed",
+        details: `Language '${language}' is unsupported or missing configuration.`
+      }, { status: 500 });
+    }
+
+    // Convert string ID back to number for Judge0
+    const languageId = parseInt(langConfig.executor || "", 10);
+    
+    if (isNaN(languageId)) {
+      return NextResponse.json({ 
+        error: "Execution Request Failed",
+        details: `Language '${language}' has an invalid executor ID mapping.`
+      }, { status: 500 });
+    }
+
+    const payload = {
+      source_code: code,
+      language_id: languageId,
+      wall_time_limit: 10,
+      cpu_time_limit: 5,
+      memory_limit: 128000,
+      max_file_size: 1024,
+      enable_network: false,
+    };
+
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), 15000); // 15s wait for API
+
+    try {
+      // Base64 false, wait true (blocks until execution finishes for max 10-15s)
+      const response = await fetch(`${JUDGE0_API_URL}/submissions?base64_encoded=false&wait=true`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: abortController.signal
+      });
+
+      clearTimeout(timeout);
+
+      if (response.status === 429) {
+        return NextResponse.json({ 
+          error: "Rate Limit Exceeded",
+          details: "Too many execution requests to the public sandbox. Please wait a moment and try again."
+        }, { status: 429 });
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return NextResponse.json({ 
+          error: "Execution Provider Error",
+          details: `The execution service returned an error (${response.status}): ${errorText.substring(0, 500)}`
+        }, { status: 503 });
+      }
+
+      const data = await response.json();
       
-      const tempSrcFile = path.join(tempDir, `bossgt_src_${sessionId}${ext}`);
-      const tempBinFile = path.join(tempDir, `bossgt_bin_${sessionId}`);
+      // Judge0 returns status inside data.status
+      const stdout = data.stdout || "";
+      let stderr = data.stderr || "";
+      const compileOutput = data.compile_output || "";
       
-      fs.writeFileSync(tempSrcFile, code, 'utf-8');
+      // Merge compile output if there is any
+      if (compileOutput) {
+        stderr = compileOutput + "\n" + stderr;
+      }
+
+      // Status mapping
+      // 3 = Accepted (Finished)
+      // 4 = Wrong Answer
+      // 5 = Time Limit Exceeded
+      // 6 = Compilation Error
+      // 7 = Runtime Error (SIGSEGV)
+      // 8 = Runtime Error (SIGXFSZ)
+      // 9 = Runtime Error (SIGFPE)
+      // 10 = Runtime Error (SIGABRT)
+      // 11 = Runtime Error (NZEC)
+      // 12 = Runtime Error (Other)
+      // 13 = Internal Error
+      // 14 = Exec Format Error
       
-      // Step 1: Compile
-      const compileArgs = [tempSrcFile, "-o", tempBinFile];
-      const compileStartTime = performance.now();
-      
-      const compileResult = await executeProcess(compilerBin, compileArgs, 5000);
-      
-      if (compileResult.exitCode !== 0) {
-        // Compilation failed
-        fs.unlink(tempSrcFile, () => {});
+      let exitCode = 0;
+      if (data.status && data.status.id !== 3) {
+        exitCode = data.status.id;
+        stderr += `\n[Execution Status]: ${data.status.description || "Error"}`;
+      }
+
+      return NextResponse.json({
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        exitCode,
+        timeMs: parseFloat(data.time || "0") * 1000 
+      });
+
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") {
         return NextResponse.json({
           stdout: "",
-          stderr: compileResult.stderr || "[Compiler Error]: Compilation failed with no stderr output.",
-          exitCode: compileResult.exitCode,
-          timeMs: compileResult.timeMs
+          stderr: "[Execution Error]: Request to the execution service timed out.",
+          exitCode: 124,
+          timeMs: 15000
         });
       }
-      
-      const compileTimeMs = Math.round(performance.now() - compileStartTime);
-
-      // Step 2: Execute
-      const execResult = await executeProcess(tempBinFile, [], 5000);
-      
-      // Add compile time to total time for realistic metric, or just return exec time
-      execResult.timeMs += compileTimeMs;
-      
-      // Cleanup
-      fs.unlink(tempSrcFile, () => {});
-      fs.unlink(tempBinFile, () => {});
-      
-      return NextResponse.json(execResult);
+      throw err;
     }
 
-    return NextResponse.json({ error: `Language '${language}' is not supported for execution yet.` }, { status: 400 });
-
   } catch (error: unknown) {
-    const errMessage = error instanceof Error ? error.message : "Unknown error occurred";
-    return NextResponse.json(
-      { error: "Unexpected server error", details: errMessage },
-      { status: 500 }
-    );
+    console.error("Execution error:", error);
+    return NextResponse.json({ 
+      error: "Execution Request Failed",
+      details: error instanceof Error ? error.message : "Unknown error"
+    }, { status: 500 });
   }
 }

@@ -34,8 +34,8 @@ export function LanguageSelector({ activeLangId, onSelect }: LanguageSelectorPro
     lang.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const supported = filteredLanguages.filter(l => l.executionSupported);
-  const comingSoon = filteredLanguages.filter(l => !l.executionSupported);
+  const supported = filteredLanguages.filter(l => l.executionStatus === "READY");
+  const comingSoon = filteredLanguages.filter(l => l.executionStatus !== "READY");
 
   return (
     <div className="relative" ref={dropdownRef}>

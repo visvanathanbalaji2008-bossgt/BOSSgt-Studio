@@ -16,7 +16,7 @@ export function TopNavigation() {
           {menuItems.map((item) => (
             <button
               key={item}
-              className="px-3 py-1.5 text-xs text-foreground/80 hover:text-foreground hover:bg-white/5 rounded-md transition-colors"
+              className="px-3 py-1.5 text-xs text-foreground/80 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
             >
               {item}
             </button>
@@ -25,10 +25,10 @@ export function TopNavigation() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="p-1.5 text-foreground/70 hover:text-foreground hover:bg-white/10 rounded-md transition-colors">
+        <button className="p-1.5 text-foreground/70 hover:text-foreground hover:bg-foreground/10 rounded-md transition-colors">
           <Settings size={16} />
         </button>
-        <button className="p-1.5 text-foreground/70 hover:text-foreground hover:bg-white/10 rounded-md transition-colors">
+        <button className="p-1.5 text-foreground/70 hover:text-foreground hover:bg-foreground/10 rounded-md transition-colors">
           <User size={16} />
         </button>
       </div>

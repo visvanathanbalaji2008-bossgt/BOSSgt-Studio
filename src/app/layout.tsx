@@ -17,7 +17,11 @@ export const metadata: Metadata = {
   description: "Professional browser-based development environment",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html
       lang="en"

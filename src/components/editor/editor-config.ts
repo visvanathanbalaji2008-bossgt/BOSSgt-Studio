@@ -1,9 +1,11 @@
+export type ExecutionStatus = "READY" | "COMPILER_REQUIRED" | "RUNTIME_REQUIRED" | "UNSUPPORTED";
+
 export interface LanguageConfig {
   id: string;
   name: string;
   monacoLanguage: string;
   extension: string;
-  executionSupported: boolean;
+  executionStatus: ExecutionStatus;
   executor: string | null;
 }
 
@@ -13,61 +15,61 @@ export const SUPPORTED_LANGUAGES: Record<string, LanguageConfig> = {
     name: "Python",
     monacoLanguage: "python",
     extension: ".py",
-    executionSupported: true,
-    executor: "python"
+    executionStatus: "READY",
+    executor: "92"
   },
   javascript: {
     id: "javascript",
     name: "JavaScript",
     monacoLanguage: "javascript",
     extension: ".js",
-    executionSupported: true,
-    executor: "node"
+    executionStatus: "READY",
+    executor: "93"
   },
   typescript: {
     id: "typescript",
     name: "TypeScript",
     monacoLanguage: "typescript",
     extension: ".ts",
-    executionSupported: false,
-    executor: "node"
+    executionStatus: "READY",
+    executor: "101"
   },
   typescriptreact: {
     id: "typescriptreact",
     name: "TypeScript React",
     monacoLanguage: "typescript",
     extension: ".tsx",
-    executionSupported: false,
-    executor: "node"
+    executionStatus: "READY",
+    executor: "typescript"
   },
   javascriptreact: {
     id: "javascriptreact",
     name: "JavaScript React",
     monacoLanguage: "javascript",
     extension: ".jsx",
-    executionSupported: false,
-    executor: "node"
+    executionStatus: "READY",
+    executor: "javascript"
   },
-  c: { id: "c", name: "C", monacoLanguage: "c", extension: ".c", executionSupported: true, executor: "c" },
-  cpp: { id: "cpp", name: "C++", monacoLanguage: "cpp", extension: ".cpp", executionSupported: true, executor: "cpp" },
-  java: { id: "java", name: "Java", monacoLanguage: "java", extension: ".java", executionSupported: false, executor: "jdk" },
-  csharp: { id: "csharp", name: "C#", monacoLanguage: "csharp", extension: ".cs", executionSupported: false, executor: "dotnet" },
-  go: { id: "go", name: "Go", monacoLanguage: "go", extension: ".go", executionSupported: false, executor: "go" },
-  rust: { id: "rust", name: "Rust", monacoLanguage: "rust", extension: ".rs", executionSupported: false, executor: "rustc" },
-  php: { id: "php", name: "PHP", monacoLanguage: "php", extension: ".php", executionSupported: false, executor: "php" },
-  ruby: { id: "ruby", name: "Ruby", monacoLanguage: "ruby", extension: ".rb", executionSupported: false, executor: "ruby" },
-  kotlin: { id: "kotlin", name: "Kotlin", monacoLanguage: "kotlin", extension: ".kt", executionSupported: false, executor: "kotlinc" },
-  swift: { id: "swift", name: "Swift", monacoLanguage: "swift", extension: ".swift", executionSupported: false, executor: "swiftc" },
-  dart: { id: "dart", name: "Dart", monacoLanguage: "dart", extension: ".dart", executionSupported: false, executor: "dart" },
-  r: { id: "r", name: "R", monacoLanguage: "r", extension: ".r", executionSupported: false, executor: "Rscript" },
-  lua: { id: "lua", name: "Lua", monacoLanguage: "lua", extension: ".lua", executionSupported: false, executor: "lua" },
-  perl: { id: "perl", name: "Perl", monacoLanguage: "perl", extension: ".pl", executionSupported: false, executor: "perl" },
-  scala: { id: "scala", name: "Scala", monacoLanguage: "scala", extension: ".scala", executionSupported: false, executor: "scala" },
-  haskell: { id: "haskell", name: "Haskell", monacoLanguage: "haskell", extension: ".hs", executionSupported: false, executor: "ghc" },
-  sql: { id: "sql", name: "SQL", monacoLanguage: "sql", extension: ".sql", executionSupported: false, executor: null },
-  bash: { id: "bash", name: "Bash", monacoLanguage: "shell", extension: ".sh", executionSupported: false, executor: "bash" },
-  powershell: { id: "powershell", name: "PowerShell", monacoLanguage: "powershell", extension: ".ps1", executionSupported: false, executor: "pwsh" },
-  plaintext: { id: "plaintext", name: "Plain Text", monacoLanguage: "plaintext", extension: ".txt", executionSupported: false, executor: null }
+  c: { id: "c", name: "C", monacoLanguage: "c", extension: ".c", executionStatus: "READY", executor: "103" },
+  cpp: { id: "cpp", name: "C++", monacoLanguage: "cpp", extension: ".cpp", executionStatus: "READY", executor: "105" },
+  java: { id: "java", name: "Java", monacoLanguage: "java", extension: ".java", executionStatus: "READY", executor: "91" },
+  csharp: { id: "csharp", name: "C#", monacoLanguage: "csharp", extension: ".cs", executionStatus: "READY", executor: "csharp" },
+  go: { id: "go", name: "Go", monacoLanguage: "go", extension: ".go", executionStatus: "READY", executor: "107" },
+  rust: { id: "rust", name: "Rust", monacoLanguage: "rust", extension: ".rs", executionStatus: "READY", executor: "108" },
+  php: { id: "php", name: "PHP", monacoLanguage: "php", extension: ".php", executionStatus: "READY", executor: "98" },
+  ruby: { id: "ruby", name: "Ruby", monacoLanguage: "ruby", extension: ".rb", executionStatus: "READY", executor: "72" },
+  kotlin: { id: "kotlin", name: "Kotlin", monacoLanguage: "kotlin", extension: ".kt", executionStatus: "READY", executor: "111" },
+  swift: { id: "swift", name: "Swift", monacoLanguage: "swift", extension: ".swift", executionStatus: "READY", executor: "83" },
+  dart: { id: "dart", name: "Dart", monacoLanguage: "dart", extension: ".dart", executionStatus: "READY", executor: "90" },
+  r: { id: "r", name: "R", monacoLanguage: "r", extension: ".r", executionStatus: "READY", executor: "99" },
+  lua: { id: "lua", name: "Lua", monacoLanguage: "lua", extension: ".lua", executionStatus: "READY", executor: "64" },
+  perl: { id: "perl", name: "Perl", monacoLanguage: "perl", extension: ".pl", executionStatus: "READY", executor: "perl" },
+  scala: { id: "scala", name: "Scala", monacoLanguage: "scala", extension: ".scala", executionStatus: "READY", executor: "scala" },
+  haskell: { id: "haskell", name: "Haskell", monacoLanguage: "haskell", extension: ".hs", executionStatus: "READY", executor: "ghc" },
+  sql: { id: "sql", name: "SQL", monacoLanguage: "sql", extension: ".sql", executionStatus: "UNSUPPORTED", executor: null },
+  bash: { id: "bash", name: "Bash", monacoLanguage: "shell", extension: ".sh", executionStatus: "READY", executor: "46" },
+  powershell: { id: "powershell", name: "PowerShell", monacoLanguage: "powershell", extension: ".ps1", executionStatus: "READY", executor: "pwsh" },
+  plaintext: { id: "plaintext", name: "Plain Text", monacoLanguage: "plaintext", extension: ".txt", executionStatus: "UNSUPPORTED", executor: null }
 };
 
 export type SupportedLanguageId = keyof typeof SUPPORTED_LANGUAGES;

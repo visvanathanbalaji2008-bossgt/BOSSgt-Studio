@@ -4,9 +4,10 @@ import {
   ChevronRight, ChevronDown, FileCode, FolderOpen,
   Plus, FolderPlus, Trash2, Edit2, File as FileIcon,
   Cloud, RefreshCw, Upload, Download, AlertTriangle,
-  Replace, ReplaceAll
+  Replace, ReplaceAll, Settings as SettingsIcon
 } from "lucide-react";
 import { useWorkspace, FileNode } from "@/hooks/useWorkspace";
+import { useSettings } from "@/hooks/useSettings";
 
 interface SidebarProps {
   workspace?: ReturnType<typeof useWorkspace>;
@@ -26,20 +27,35 @@ export function Sidebar({ workspace }: SidebarProps) {
     <div className="flex h-full border-r border-panel-border shrink-0">
       {/* Activity Bar */}
       <div className="w-12 bg-activity-bar flex flex-col items-center py-4 gap-4 border-r border-panel-border/50">
-        {tabs.map((tab) => (
+        <div className="flex-1 flex flex-col items-center gap-4">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`p-2 rounded-lg transition-colors ${
+                activeTab === tab.id
+                  ? "text-accent bg-accent/10"
+                  : "text-foreground/50 hover:text-foreground hover:bg-foreground/5"
+              }`}
+              title={tab.label}
+            >
+              <tab.icon size={22} strokeWidth={1.5} />
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-col items-center gap-4 mt-auto">
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => setActiveTab("settings")}
             className={`p-2 rounded-lg transition-colors ${
-              activeTab === tab.id
+              activeTab === "settings"
                 ? "text-accent bg-accent/10"
-                : "text-foreground/50 hover:text-foreground hover:bg-white/5"
+                : "text-foreground/50 hover:text-foreground hover:bg-foreground/5"
             }`}
-            title={tab.label}
+            title="Settings"
           >
-            <tab.icon size={22} strokeWidth={1.5} />
+            <SettingsIcon size={22} strokeWidth={1.5} />
           </button>
-        ))}
+        </div>
       </div>
 
       {/* Primary Sidebar Panel */}
@@ -66,7 +82,19 @@ export function Sidebar({ workspace }: SidebarProps) {
           </div>
         )}
 
-        {activeTab !== "explorer" && activeTab !== "source-control" && activeTab !== "search" && (
+        {activeTab === "extensions" && (
+          <div className="flex-1 overflow-y-auto">
+            <ExtensionsPanel />
+          </div>
+        )}
+
+        {activeTab === "settings" && (
+          <div className="flex-1 overflow-y-auto">
+            <SettingsPanel />
+          </div>
+        )}
+
+        {activeTab !== "explorer" && activeTab !== "source-control" && activeTab !== "search" && activeTab !== "extensions" && activeTab !== "settings" && (
           <div className="p-4 text-xs text-foreground/50 text-center">
             Placeholder for {activeTab} functionality.
           </div>
@@ -95,15 +123,15 @@ function ExplorerTree({ workspace }: { workspace: ReturnType<typeof useWorkspace
     <div className="flex flex-col">
       <div
         onClick={() => setIsProjectOpen(!isProjectOpen)}
-        className="w-full flex items-center justify-between px-2 py-1.5 text-sm font-medium hover:bg-white/5 transition-colors text-foreground/90 cursor-pointer group"
+        className="w-full flex items-center justify-between px-2 py-1.5 text-sm font-medium hover:bg-foreground/5 transition-colors text-foreground/90 cursor-pointer group"
       >
         <div className="flex items-center gap-1">
           {isProjectOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           <span className="truncate">BOSSgt-Project</span>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={handleCreateFile} className="p-0.5 hover:bg-white/10 rounded" title="New File"><Plus size={14} /></button>
-          <button onClick={handleCreateFolder} className="p-0.5 hover:bg-white/10 rounded" title="New Folder"><FolderPlus size={14} /></button>
+          <button onClick={handleCreateFile} className="p-0.5 hover:bg-foreground/10 rounded" title="New File"><Plus size={14} /></button>
+          <button onClick={handleCreateFolder} className="p-0.5 hover:bg-foreground/10 rounded" title="New Folder"><FolderPlus size={14} /></button>
         </div>
       </div>
 
@@ -162,7 +190,7 @@ function TreeNode({ node, level, workspace }: { node: FileNode, level: number, w
       <div
         onClick={handleToggle}
         className={`flex items-center justify-between py-1.5 pr-2 text-sm cursor-pointer group ${
-          isActive ? "bg-accent/10 text-accent border-l-2 border-accent" : "hover:bg-white/5 text-foreground/80 border-l-2 border-transparent"
+          isActive ? "bg-accent/10 text-accent border-l-2 border-accent" : "hover:bg-foreground/5 text-foreground/80 border-l-2 border-transparent"
         }`}
         style={{ paddingLeft: isActive ? `calc(${paddingLeft} - 2px)` : paddingLeft }}
         title={node.path}
@@ -177,7 +205,7 @@ function TreeNode({ node, level, workspace }: { node: FileNode, level: number, w
           <span className="truncate">{node.name}</span>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={handleRename} className="p-0.5 hover:bg-white/10 rounded text-foreground/50 hover:text-foreground" title="Rename"><Edit2 size={12} /></button>
+          <button onClick={handleRename} className="p-0.5 hover:bg-foreground/10 rounded text-foreground/50 hover:text-foreground" title="Rename"><Edit2 size={12} /></button>
           <button onClick={handleDelete} className="p-0.5 hover:bg-red-500/20 rounded text-foreground/50 hover:text-red-400" title="Delete"><Trash2 size={12} /></button>
         </div>
       </div>
@@ -250,7 +278,7 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
           setLogs(logData.logs || []);
         }
       }
-    } catch (_) {}
+    } catch {}
   }, []);
 
   React.useEffect(() => {
@@ -361,7 +389,7 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
               <button
                 onClick={() => handlePushPull("fetch")}
                 disabled={isLoading}
-                className="p-1 hover:text-foreground hover:bg-white/10 rounded ml-1"
+                className="p-1 hover:text-foreground hover:bg-foreground/10 rounded ml-1"
                 title="Fetch"
               >
                 <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
@@ -410,9 +438,9 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
                 className="w-full bg-background border border-panel-border rounded p-1.5 text-xs text-foreground focus:border-accent outline-none"
               />
               <div className="flex gap-2">
-                <button onClick={connectRemote} disabled={isLoading || !newRemoteUrl} className="flex-1 py-1 bg-white/10 hover:bg-white/20 rounded text-xs transition-colors">Connect</button>
+                <button onClick={connectRemote} disabled={isLoading || !newRemoteUrl} className="flex-1 py-1 bg-foreground/10 hover:bg-foreground/20 rounded text-xs transition-colors">Connect</button>
                 {showRemoteForm && remoteUrl && (
-                  <button onClick={() => setShowRemoteForm(false)} className="py-1 px-2 hover:bg-white/10 rounded text-xs transition-colors text-foreground/50">Cancel</button>
+                  <button onClick={() => setShowRemoteForm(false)} className="py-1 px-2 hover:bg-foreground/10 rounded text-xs transition-colors text-foreground/50">Cancel</button>
                 )}
               </div>
             </div>
@@ -421,14 +449,14 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
               <button
                 onClick={() => handlePushPull("pull")}
                 disabled={isLoading}
-                className="flex-1 py-1.5 flex justify-center items-center gap-1.5 bg-white/5 hover:bg-white/10 rounded text-xs transition-colors"
+                className="flex-1 py-1.5 flex justify-center items-center gap-1.5 bg-foreground/5 hover:bg-foreground/10 rounded text-xs transition-colors"
               >
                 <Download size={12} /> Pull
               </button>
               <button
                 onClick={() => handlePushPull("push")}
                 disabled={isLoading}
-                className="flex-1 py-1.5 flex justify-center items-center gap-1.5 bg-white/5 hover:bg-white/10 rounded text-xs transition-colors"
+                className="flex-1 py-1.5 flex justify-center items-center gap-1.5 bg-foreground/5 hover:bg-foreground/10 rounded text-xs transition-colors"
               >
                 <Upload size={12} /> Push
               </button>
@@ -467,13 +495,13 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
               Staged Changes ({stagedChanges.length})
             </div>
             {stagedChanges.map(c => (
-              <div key={c.file} className="flex items-center justify-between px-3 py-1 hover:bg-white/5 group cursor-pointer" onClick={() => workspace.openDiff(c.file, c.file.split('/').pop() || c.file)}>
+              <div key={c.file} className="flex items-center justify-between px-3 py-1 hover:bg-foreground/5 group cursor-pointer" onClick={() => workspace.openDiff(c.file, c.file.split('/').pop() || c.file)}>
                 <div className="flex items-center gap-2 truncate text-sm">
                   <span className="text-green-400 font-mono text-[10px] w-2">{c.staging}</span>
                   <span className="text-foreground/80 truncate">{c.file}</span>
                 </div>
                 <div className="hidden group-hover:flex items-center gap-1">
-                  <button onClick={(e) => { e.stopPropagation(); handleAction("unstage", { file: c.file }); }} className="p-1 hover:bg-white/10 rounded text-foreground/50 hover:text-foreground" title="Unstage">-</button>
+                  <button onClick={(e) => { e.stopPropagation(); handleAction("unstage", { file: c.file }); }} className="p-1 hover:bg-foreground/10 rounded text-foreground/50 hover:text-foreground" title="Unstage">-</button>
                 </div>
               </div>
             ))}
@@ -487,12 +515,12 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
               <span className="text-xs font-semibold uppercase tracking-wider text-foreground/50">
                 Changes ({unstagedChanges.length})
               </span>
-              <button onClick={() => handleAction("add", { file: "all" })} className="p-0.5 hover:bg-white/10 rounded text-foreground/50 hover:text-foreground" title="Stage All">
+              <button onClick={() => handleAction("add", { file: "all" })} className="p-0.5 hover:bg-foreground/10 rounded text-foreground/50 hover:text-foreground" title="Stage All">
                 <Plus size={14} />
               </button>
             </div>
             {unstagedChanges.map(c => (
-              <div key={c.file} className="flex items-center justify-between px-3 py-1 hover:bg-white/5 group cursor-pointer" onClick={() => workspace.openDiff(c.file, c.file.split('/').pop() || c.file)}>
+              <div key={c.file} className="flex items-center justify-between px-3 py-1 hover:bg-foreground/5 group cursor-pointer" onClick={() => workspace.openDiff(c.file, c.file.split('/').pop() || c.file)}>
                 <div className="flex items-center gap-2 truncate text-sm">
                   <span className={c.staging === '?' ? "text-green-400 font-mono text-[10px] w-2" : "text-yellow-400 font-mono text-[10px] w-2"}>
                     {c.staging === '?' ? 'U' : c.working}
@@ -500,10 +528,10 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
                   <span className="text-foreground/80 truncate">{c.file}</span>
                 </div>
                 <div className="hidden group-hover:flex items-center gap-1">
-                  <button onClick={(e) => { e.stopPropagation(); handleAction("restore", { file: c.file }); }} className="p-1 hover:bg-white/10 rounded text-foreground/50 hover:text-foreground" title="Discard Changes">
+                  <button onClick={(e) => { e.stopPropagation(); handleAction("restore", { file: c.file }); }} className="p-1 hover:bg-foreground/10 rounded text-foreground/50 hover:text-foreground" title="Discard Changes">
                     <Trash2 size={12} />
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); handleAction("add", { file: c.file }); }} className="p-1 hover:bg-white/10 rounded text-foreground/50 hover:text-foreground" title="Stage">
+                  <button onClick={(e) => { e.stopPropagation(); handleAction("add", { file: c.file }); }} className="p-1 hover:bg-foreground/10 rounded text-foreground/50 hover:text-foreground" title="Stage">
                     <Plus size={14} />
                   </button>
                 </div>
@@ -521,7 +549,7 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
               </span>
             </div>
             {logs.map(log => (
-              <div key={log.hash} className="flex flex-col px-3 py-1.5 hover:bg-white/5 border-b border-white/5">
+              <div key={log.hash} className="flex flex-col px-3 py-1.5 hover:bg-foreground/5 border-b border-foreground/5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-foreground/90 text-xs font-medium truncate">{log.message}</span>
                   <span className="text-accent font-mono text-[10px]">{log.hash}</span>
@@ -645,13 +673,13 @@ function SearchPanel({ workspace }: { workspace: ReturnType<typeof useWorkspace>
       <div className="flex-1 overflow-y-auto -mx-3">
         {Object.entries(grouped).map(([file, lines]) => (
           <div key={file} className="mb-2">
-            <div className="px-3 py-1 flex items-center justify-between text-xs font-semibold text-foreground/80 bg-white/5">
+            <div className="px-3 py-1 flex items-center justify-between text-xs font-semibold text-foreground/80 bg-foreground/5">
               <span className="truncate">{file}</span>
               <div className="flex items-center gap-1">
-                <span className="px-1.5 py-0.5 bg-white/10 rounded-full text-[10px]">{lines.length}</span>
+                <span className="px-1.5 py-0.5 bg-foreground/10 rounded-full text-[10px]">{lines.length}</span>
                 <button 
                   onClick={() => handleReplace([file])}
-                  className="p-1 hover:bg-white/20 rounded text-foreground/70"
+                  className="p-1 hover:bg-foreground/20 rounded text-foreground/70"
                   title="Replace in file"
                 >
                   <Replace size={12} />
@@ -661,7 +689,7 @@ function SearchPanel({ workspace }: { workspace: ReturnType<typeof useWorkspace>
             {lines.map((res, i) => (
               <div 
                 key={i} 
-                className="px-3 py-1 text-[11px] font-mono text-foreground/60 hover:bg-white/5 hover:text-foreground cursor-pointer flex gap-2 truncate"
+                className="px-3 py-1 text-[11px] font-mono text-foreground/60 hover:bg-foreground/5 hover:text-foreground cursor-pointer flex gap-2 truncate"
                 onClick={() => {
                   workspace.openFile(file, file.split('/').pop() || file);
                   window.dispatchEvent(new CustomEvent('editor-goto-line', { detail: { file, line: res.line }}));
@@ -678,6 +706,217 @@ function SearchPanel({ workspace }: { workspace: ReturnType<typeof useWorkspace>
             No results found.
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ExtensionsPanel() {
+  const { settings, toggleExtension } = useSettings();
+  const [query, setQuery] = useState("");
+
+  const filtered = settings.extensions.filter(ext => 
+    ext.name.toLowerCase().includes(query.toLowerCase()) || 
+    ext.description.toLowerCase().includes(query.toLowerCase())
+  );
+
+  const installed = filtered.filter(e => e.installed);
+  const recommended = filtered.filter(e => !e.installed);
+
+  return (
+    <div className="flex flex-col h-full font-sans p-3">
+      <div className="mb-4">
+        <div className="relative flex items-center bg-background border border-panel-border rounded focus-within:border-accent">
+          <input
+            type="text"
+            placeholder="Search Extensions in Marketplace"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            className="w-full bg-transparent p-1.5 text-xs text-foreground outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto -mx-3">
+        {installed.length > 0 && (
+          <div className="mb-4">
+            <div className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-foreground/50">
+              Installed
+            </div>
+            {installed.map(ext => (
+              <div key={ext.id} className="flex gap-3 p-3 hover:bg-foreground/5 border-b border-panel-border/30">
+                <div className="w-8 h-8 rounded bg-accent/20 flex items-center justify-center shrink-0">
+                  <Blocks size={16} className="text-accent" />
+                </div>
+                <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-xs text-foreground truncate">{ext.name}</span>
+                    <span className="text-[10px] text-foreground/50">v{ext.version}</span>
+                  </div>
+                  <span className="text-[10px] text-foreground/70 mt-1 line-clamp-2 leading-tight">
+                    {ext.description}
+                  </span>
+                  <div className="flex gap-2 mt-2">
+                    <button 
+                      onClick={() => toggleExtension(ext.id, 'enabled', !ext.enabled)}
+                      className={`px-2 py-0.5 rounded text-[10px] border transition-colors ${ext.enabled ? 'border-accent text-accent hover:bg-accent/10' : 'border-foreground/30 text-foreground/50 hover:bg-foreground/10'}`}
+                    >
+                      {ext.enabled ? "Disable" : "Enable"}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        toggleExtension(ext.id, 'installed', false);
+                        toggleExtension(ext.id, 'enabled', false);
+                      }}
+                      className="px-2 py-0.5 rounded text-[10px] border border-red-900 text-red-400 hover:bg-red-900/20 transition-colors"
+                    >
+                      Uninstall
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {recommended.length > 0 && (
+          <div className="mb-4">
+            <div className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-foreground/50">
+              Recommended
+            </div>
+            {recommended.map(ext => (
+              <div key={ext.id} className="flex gap-3 p-3 hover:bg-foreground/5 border-b border-panel-border/30">
+                <div className="w-8 h-8 rounded bg-foreground/5 flex items-center justify-center shrink-0">
+                  <Blocks size={16} className="text-foreground/40" />
+                </div>
+                <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-xs text-foreground truncate">{ext.name}</span>
+                    <span className="text-[10px] text-foreground/50">v{ext.version}</span>
+                  </div>
+                  <span className="text-[10px] text-foreground/70 mt-1 line-clamp-2 leading-tight">
+                    {ext.description}
+                  </span>
+                  <div className="flex gap-2 mt-2">
+                    <button 
+                      onClick={() => {
+                        toggleExtension(ext.id, 'installed', true);
+                        toggleExtension(ext.id, 'enabled', true);
+                      }}
+                      className="px-3 py-0.5 bg-accent text-white rounded text-[10px] font-medium hover:bg-accent-hover transition-colors"
+                    >
+                      Install
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SettingsPanel() {
+  const { settings, updateEditorSettings, updateAppearanceSettings } = useSettings();
+  const [query, setQuery] = useState("");
+
+  const categories = [
+    {
+      title: "Editor",
+      settings: [
+        { id: "fontSize", label: "Font Size", type: "number", value: settings.editor.fontSize },
+        { id: "tabSize", label: "Tab Size", type: "number", value: settings.editor.tabSize },
+        { id: "wordWrap", label: "Word Wrap", type: "select", options: ["on", "off"], value: settings.editor.wordWrap },
+        { id: "minimap", label: "Minimap", type: "boolean", value: settings.editor.minimap },
+        { id: "lineNumbers", label: "Line Numbers", type: "select", options: ["on", "off"], value: settings.editor.lineNumbers },
+        { id: "autoClosingBrackets", label: "Auto Closing Brackets", type: "select", options: ["always", "languageDefined", "beforeWhitespace", "never"], value: settings.editor.autoClosingBrackets },
+        { id: "theme", label: "Color Theme", type: "select", options: ["vs-dark", "vs", "hc-black"], value: settings.editor.theme }
+      ]
+    },
+    {
+      title: "Appearance",
+      settings: [
+        { id: "uiTheme", label: "UI Theme", type: "select", options: ["dark", "light"], value: settings.appearance.uiTheme }
+      ]
+    }
+  ];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleUpdate = (categoryId: string, id: string, value: any) => {
+    if (categoryId === "Editor") {
+      updateEditorSettings({ [id]: value });
+    } else if (categoryId === "Appearance") {
+      updateAppearanceSettings({ [id]: value });
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full font-sans p-4">
+      <div className="mb-6">
+        <div className="relative flex items-center bg-background border border-panel-border rounded focus-within:border-accent">
+          <input
+            type="text"
+            placeholder="Search Settings"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            className="w-full bg-transparent p-1.5 text-xs text-foreground outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto pr-2">
+        {categories.map(category => {
+          const visibleSettings = category.settings.filter(s => s.label.toLowerCase().includes(query.toLowerCase()));
+          if (visibleSettings.length === 0) return null;
+
+          return (
+            <div key={category.title} className="mb-8">
+              <h3 className="text-sm font-semibold text-foreground border-b border-panel-border/50 pb-2 mb-4">{category.title}</h3>
+              <div className="flex flex-col gap-5">
+                {visibleSettings.map(setting => (
+                  <div key={setting.id} className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-foreground/90">{setting.label}</label>
+                    
+                    {setting.type === "number" && (
+                      <input 
+                        type="number" 
+                        value={setting.value as number}
+                        onChange={e => handleUpdate(category.title, setting.id, parseInt(e.target.value, 10))}
+                        className="w-full max-w-[200px] bg-background border border-panel-border rounded px-2 py-1 text-xs focus:border-accent outline-none"
+                      />
+                    )}
+
+                    {setting.type === "boolean" && (
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={setting.value as boolean}
+                          onChange={e => handleUpdate(category.title, setting.id, e.target.checked)}
+                          className="accent-accent"
+                        />
+                        <span className="text-xs text-foreground/70">Enabled</span>
+                      </label>
+                    )}
+
+                    {setting.type === "select" && setting.options && (
+                      <select 
+                        value={setting.value as string}
+                        onChange={e => handleUpdate(category.title, setting.id, e.target.value)}
+                        className="w-full max-w-[200px] bg-background border border-panel-border rounded px-2 py-1 text-xs focus:border-accent outline-none text-foreground"
+                      >
+                        {setting.options.map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

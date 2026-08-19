@@ -44,7 +44,7 @@ export function RightPanel({ executionResult, isRunning }: RightPanelProps) {
             setCwd(data.newCwd);
           }
         }
-      } catch (_) {
+      } catch {
         // Silently fail
       }
     };
@@ -160,8 +160,8 @@ export function RightPanel({ executionResult, isRunning }: RightPanelProps) {
               onClick={() => setActiveTab(tab.toLowerCase())}
               className={`px-3 py-1 text-xs font-medium uppercase tracking-wider rounded transition-colors ${
                 activeTab === tab.toLowerCase()
-                  ? "text-foreground bg-white/10"
-                  : "text-foreground/50 hover:text-foreground/80 hover:bg-white/5"
+                  ? "text-foreground bg-foreground/10"
+                  : "text-foreground/50 hover:text-foreground/80 hover:bg-foreground/5"
               }`}
             >
               {tab}
@@ -171,14 +171,14 @@ export function RightPanel({ executionResult, isRunning }: RightPanelProps) {
         <div className="flex items-center gap-1 text-foreground/50 pr-2">
           {activeTab === "terminal" && (
             <>
-              <button onClick={clearTerminal} className="p-1 hover:text-foreground hover:bg-white/10 rounded" title="Clear Terminal"><Trash2 size={14} /></button>
-              <button onClick={restartSession} className="p-1 hover:text-foreground hover:bg-white/10 rounded" title="Restart Session"><RefreshCw size={14} /></button>
+              <button onClick={clearTerminal} className="p-1 hover:text-foreground hover:bg-foreground/10 rounded" title="Clear Terminal"><Trash2 size={14} /></button>
+              <button onClick={restartSession} className="p-1 hover:text-foreground hover:bg-foreground/10 rounded" title="Restart Session"><RefreshCw size={14} /></button>
               <div className="w-px h-4 bg-panel-border mx-1"></div>
             </>
           )}
-          <button className="p-1 hover:text-foreground hover:bg-white/10 rounded"><Maximize2 size={14} /></button>
-          <button className="p-1 hover:text-foreground hover:bg-white/10 rounded"><Minus size={14} /></button>
-          <button className="p-1 hover:text-foreground hover:bg-white/10 rounded"><X size={14} /></button>
+          <button className="p-1 hover:text-foreground hover:bg-foreground/10 rounded"><Maximize2 size={14} /></button>
+          <button className="p-1 hover:text-foreground hover:bg-foreground/10 rounded"><Minus size={14} /></button>
+          <button className="p-1 hover:text-foreground hover:bg-foreground/10 rounded"><X size={14} /></button>
         </div>
       </div>
 
@@ -229,7 +229,7 @@ export function RightPanel({ executionResult, isRunning }: RightPanelProps) {
                 </div>
               </div>
             ) : (
-              <div className="text-foreground/40 italic mt-8 text-xs border border-dashed border-panel-border p-4 rounded bg-white/5">
+              <div className="text-foreground/40 italic mt-8 text-xs border border-dashed border-panel-border p-4 rounded bg-foreground/5">
                 Ready to execute code. Click &quot;Run Code&quot; in the editor toolbar.
               </div>
             )}

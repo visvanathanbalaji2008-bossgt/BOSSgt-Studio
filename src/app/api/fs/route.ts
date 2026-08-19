@@ -5,7 +5,7 @@ import path from 'path';
 // Security: Prevent path traversal
 function getSafePath(relativePath: string) {
   const root = process.cwd();
-  const safePath = path.resolve(root, relativePath);
+  const safePath = path.resolve(/*turbopackIgnore: true*/ root, relativePath);
   if (!safePath.startsWith(root)) {
     throw new Error("Invalid path");
   }
@@ -21,7 +21,7 @@ export interface FileNode {
 
 async function buildTree(relativePath: string): Promise<FileNode[]> {
   const safePath = getSafePath(relativePath);
-  const entries = await fs.readdir(safePath, { withFileTypes: true });
+  const entries = await fs.readdir(/*turbopackIgnore: true*/ safePath, { withFileTypes: true });
   
   const nodes: FileNode[] = [];
   

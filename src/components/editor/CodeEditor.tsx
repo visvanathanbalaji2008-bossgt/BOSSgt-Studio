@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useMemo, useRef, useEffect } from "react";
-import Editor, { OnMount } from "@monaco-editor/react";
+import Editor from "@monaco-editor/react";
 import { Check, Columns, ChevronsRight } from "lucide-react";
 import type { editor } from "monaco-editor";
+import { useSettings } from "@/hooks/useSettings";
 
 interface CodeEditorProps {
   value: string;
   onChange: (value: string | undefined) => void;
   language: string;
-  theme?: string;
 }
 
 // Detect conflict markers
@@ -18,10 +18,10 @@ const conflictRegex = /<<<<<<< HEAD\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> [^
 export function CodeEditor({
   value,
   onChange,
-  language,
-  theme = "vs-dark"
+  language
 }: CodeEditorProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const { settings } = useSettings();
 
   useEffect(() => {
     const handleGoToLine = (e: Event) => {
@@ -74,23 +74,25 @@ export function CodeEditor({
         height="100%"
         width="100%"
         language={language}
-        theme={theme}
+        theme={settings.editor.theme}
         value={value}
         onChange={onChange}
         onMount={(editor) => {
           editorRef.current = editor;
         }}
         options={{
-          minimap: { enabled: true },
-          fontSize: 14,
+          minimap: { enabled: settings.editor.minimap },
+          fontSize: settings.editor.fontSize,
           fontFamily: "var(--font-mono), monospace",
-          lineNumbers: "on",
+          lineNumbers: settings.editor.lineNumbers,
           roundedSelection: false,
           scrollBeyondLastLine: false,
           readOnly: false,
           cursorStyle: "line",
           automaticLayout: true,
-          wordWrap: "on",
+          wordWrap: settings.editor.wordWrap,
+          tabSize: settings.editor.tabSize,
+          autoClosingBrackets: settings.editor.autoClosingBrackets,
           bracketPairColorization: { enabled: true },
           formatOnPaste: true,
           formatOnType: true,

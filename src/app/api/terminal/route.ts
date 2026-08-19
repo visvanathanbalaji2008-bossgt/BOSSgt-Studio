@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       try {
         const newCwd = path.resolve(currentCwd, targetDir);
         // Verify directory exists
-        const stat = fs.statSync(newCwd);
+        const stat = fs.statSync(/*turbopackIgnore: true*/ newCwd);
         if (!stat.isDirectory()) {
           throw new Error(`cd: ${targetDir}: Not a directory`);
         }

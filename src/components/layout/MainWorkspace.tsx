@@ -63,7 +63,7 @@ export function MainWorkspace({ workspace, onRun, isRunning }: MainWorkspaceProp
               key={file.path}
               onClick={() => openFile(file.path, file.name)}
               className={`flex items-center gap-2 px-3 py-2 min-w-[120px] max-w-[200px] cursor-pointer border-r border-panel-border transition-colors ${
-                isActive ? "bg-editor border-t-2 border-t-accent text-accent" : "bg-panel border-t-2 border-t-transparent hover:bg-white/5 text-foreground/60"
+                isActive ? "bg-editor border-t-2 border-t-accent text-accent" : "bg-panel border-t-2 border-t-transparent hover:bg-foreground/5 text-foreground/60"
               }`}
               title={file.path}
             >
@@ -71,7 +71,7 @@ export function MainWorkspace({ workspace, onRun, isRunning }: MainWorkspaceProp
               <span className="flex-1 text-sm truncate select-none">{file.name}</span>
               
               <div 
-                className="flex items-center justify-center w-5 h-5 rounded hover:bg-white/10 text-foreground/50 hover:text-foreground"
+                className="flex items-center justify-center w-5 h-5 rounded hover:bg-foreground/10 text-foreground/50 hover:text-foreground"
                 onClick={(e) => {
                   e.stopPropagation();
                   closeFile(file.path);
@@ -102,7 +102,7 @@ export function MainWorkspace({ workspace, onRun, isRunning }: MainWorkspaceProp
               {isDirty && activeFile.mode !== 'diff' && (
                 <button 
                   onClick={handleSave}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-white/5 hover:bg-white/10 text-foreground transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-foreground/5 hover:bg-foreground/10 text-foreground transition-colors"
                   title="Save (Cmd+S)"
                 >
                   <Save size={14} />

@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       let replaceCount = 0;
 
       for (const file of filePaths) {
-        const fullPath = path.join(root, file);
+        const fullPath = path.join(/*turbopackIgnore: true*/ root, file);
         if (fs.existsSync(fullPath)) {
           const content = fs.readFileSync(fullPath, "utf-8");
           

@@ -8,6 +8,7 @@ import { RightPanel } from "@/components/layout/RightPanel";
 import { StatusBar } from "@/components/layout/StatusBar";
 import { DEFAULT_LANGUAGE, getLanguageById } from "@/components/editor/editor-config";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useSettings } from "@/hooks/useSettings";
 
 export interface ExecutionResult {
   stdout: string;
@@ -20,17 +21,36 @@ export default function Home() {
   const [isRunning, setIsRunning] = useState(false);
   const [executionResult, setExecutionResult] = useState<ExecutionResult | null>(null);
   const workspace = useWorkspace();
+  const { settings } = useSettings();
   const activeFile = workspace.openFiles.find(f => f.path === workspace.activeFilePath);
   const activeLangId = activeFile ? activeFile.languageId : DEFAULT_LANGUAGE;
+
+  React.useEffect(() => {
+    if (settings.appearance.uiTheme === "light") {
+      document.documentElement.classList.add("light");
+    } else {
+      document.documentElement.classList.remove("light");
+    }
+  }, [settings.appearance.uiTheme]);
 
   const handleRunCode = async (code: string, language: string) => {
     const langConfig = getLanguageById(language);
     
-    if (!langConfig.executionSupported) {
+    if (langConfig.executionStatus === "UNSUPPORTED") {
       setExecutionResult({
-        stdout: `${langConfig.name} execution is coming soon.`,
-        stderr: "",
-        exitCode: 0,
+        stdout: "",
+        stderr: `${langConfig.name} execution is unsupported.`,
+        exitCode: 1,
+        timeMs: 0
+      });
+      return;
+    }
+    
+    if (langConfig.executionStatus === "COMPILER_REQUIRED" || langConfig.executionStatus === "RUNTIME_REQUIRED") {
+      setExecutionResult({
+        stdout: "",
+        stderr: `[Sandbox Backend Required]: Compiler or Runtime for ${langConfig.name} is not available in the current environment.\nThis environment only supports locally available languages (e.g. Python, JS, TS, C, C++, Ruby, Swift) until a secure containerized backend is connected.`,
+        exitCode: 1,
         timeMs: 0
       });
       return;
