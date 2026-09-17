@@ -185,10 +185,24 @@ export async function executeCode(req: ExecutionRequest): Promise<ExecutionRespo
     // 4. Remote Execution Gateway (Judge0 CE API)
     if (langDef.judge0Id) {
       try {
-        const judge0Res = await fetch(JUDGE0_API_URL, {
+        let judge0Url = process.env.JUDGE0_API_URL || "https://ce.judge0.com/submissions?wait=true&base64_encoded=true&fields=stdout,stderr,status_id,compile_output,time,memory";
+        if (!judge0Url.includes("base64_encoded")) {
+          judge0Url += (judge0Url.includes("?") ? "&" : "?") + "base64_encoded=true";
+        }
+        if (!judge0Url.includes("wait=")) {
+          judge0Url += (judge0Url.includes("?") ? "&" : "?") + "wait=true";
+        }
+
+        const judge0Res = await fetch(judge0Url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: AbortSignal.timeout(1500),
+          headers: { 
+            "Content-Type": "application/json",
+            ...(process.env.RAPIDAPI_KEY ? {
+              "X-RapidAPI-Key": process.env.RAPIDAPI_KEY,
+              "X-RapidAPI-Host": process.env.RAPIDAPI_HOST || "judge0-ce.p.rapidapi.com"
+            } : {})
+          },
+          signal: AbortSignal.timeout(8000),
           body: JSON.stringify({
             source_code: Buffer.from(req.code).toString("base64"),
             language_id: langDef.judge0Id,
@@ -200,19 +214,17 @@ export async function executeCode(req: ExecutionRequest): Promise<ExecutionRespo
         if (judge0Res.ok) {
           const data = await judge0Res.json();
           
-          const safeDecode = (str: string | null | undefined) => {
-            if (!str) return "";
+          const decodeField = (field: string | null | undefined) => {
+            if (!field) return "";
             try {
-              const decoded = Buffer.from(str, "base64").toString("utf-8");
-              if (/[\x00-\x08\x0E-\x1F]/.test(decoded)) return str;
-              return decoded;
+              return Buffer.from(field, "base64").toString("utf-8");
             } catch {
-              return str;
+              return field;
             }
           };
 
-          const stdout = safeDecode(data.stdout);
-          const stderr = safeDecode(data.stderr) || safeDecode(data.compile_output);
+          const stdout = decodeField(data.stdout);
+          const stderr = decodeField(data.stderr) || decodeField(data.compile_output);
           const statusId = data.status_id || 3;
           const exitCode = statusId === 3 ? 0 : statusId === 5 ? 124 : 1;
 
