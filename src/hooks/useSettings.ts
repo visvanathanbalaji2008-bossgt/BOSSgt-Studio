@@ -81,9 +81,32 @@ export function useSettings() {
         setSettingsState(customEvent.detail);
       }
     };
+    
+    const toggleMinimap = () => {
+      setSettingsState(prev => {
+        const updated = { ...prev, editor: { ...prev.editor, minimap: !prev.editor.minimap } };
+        localStorage.setItem("bossgt_settings", JSON.stringify(updated));
+        return updated;
+      });
+    };
+
+    const toggleWordWrap = () => {
+      setSettingsState(prev => {
+        const updated = { ...prev, editor: { ...prev.editor, wordWrap: prev.editor.wordWrap === 'on' ? 'off' : 'on' as 'on'|'off' } };
+        localStorage.setItem("bossgt_settings", JSON.stringify(updated));
+        return updated;
+      });
+    };
 
     window.addEventListener('bossgt_settings_changed', handleSettingsChange);
-    return () => window.removeEventListener('bossgt_settings_changed', handleSettingsChange);
+    window.addEventListener('view:toggle-minimap', toggleMinimap);
+    window.addEventListener('view:toggle-word-wrap', toggleWordWrap);
+    
+    return () => {
+      window.removeEventListener('bossgt_settings_changed', handleSettingsChange);
+      window.removeEventListener('view:toggle-minimap', toggleMinimap);
+      window.removeEventListener('view:toggle-word-wrap', toggleWordWrap);
+    };
   }, []);
 
   const persistAndDispatch = (updated: Settings) => {

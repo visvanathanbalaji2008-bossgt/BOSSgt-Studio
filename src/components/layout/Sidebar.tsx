@@ -1,102 +1,175 @@
 import React, { useState } from "react";
 import {
-  Files, Search, GitBranch, Blocks,
+  Files, Search, GitBranch, Blocks, Home, Play,
   ChevronRight, ChevronDown, FileCode, FolderOpen,
   Plus, FolderPlus, Trash2, Edit2, File as FileIcon,
   Cloud, RefreshCw, Upload, Download, AlertTriangle,
-  Replace, ReplaceAll, Settings as SettingsIcon
+  Replace, ReplaceAll, Settings as SettingsIcon, Sparkles
 } from "lucide-react";
 import { useWorkspace, FileNode } from "@/hooks/useWorkspace";
 import { useSettings } from "@/hooks/useSettings";
+import { useListenEvent, emitEvent } from "@/lib/events";
+import Link from "next/link";
 
 interface SidebarProps {
   workspace?: ReturnType<typeof useWorkspace>;
+  isExpanded?: boolean;
+  onToggle?: () => void;
 }
 
-export function Sidebar({ workspace }: SidebarProps) {
+export function Sidebar({ workspace, isExpanded = true, onToggle }: SidebarProps) {
   const [activeTab, setActiveTab] = useState("explorer");
 
   const tabs = [
     { id: "explorer", icon: Files, label: "Explorer" },
     { id: "search", icon: Search, label: "Search" },
     { id: "source-control", icon: GitBranch, label: "Source Control" },
-    { id: "extensions", icon: Blocks, label: "Extensions" },
+    { id: "extensions", icon: Blocks, label: "Extensions" }
   ];
 
+  useListenEvent("view:toggle-explorer", () => {
+    setActiveTab("explorer");
+    if (!isExpanded && onToggle) onToggle();
+  });
+  useListenEvent("view:toggle-search", () => {
+    setActiveTab("search");
+    if (!isExpanded && onToggle) onToggle();
+  });
+  useListenEvent("view:toggle-settings", () => {
+    setActiveTab("settings");
+    if (!isExpanded && onToggle) onToggle();
+  });
+
+  const handleTabClick = (tabId: string) => {
+    if (activeTab === tabId) {
+      if (onToggle) onToggle();
+    } else {
+      setActiveTab(tabId);
+      if (!isExpanded && onToggle) onToggle();
+    }
+  };
+
   return (
-    <div className="flex h-full border-r border-panel-border shrink-0">
-      {/* Activity Bar */}
-      <div className="w-12 bg-activity-bar flex flex-col items-center py-4 gap-4 border-r border-panel-border/50">
-        <div className="flex-1 flex flex-col items-center gap-4">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`p-2 rounded-lg transition-colors ${
-                activeTab === tab.id
-                  ? "text-accent bg-accent/10"
-                  : "text-foreground/50 hover:text-foreground hover:bg-foreground/5"
-              }`}
-              title={tab.label}
-            >
-              <tab.icon size={22} strokeWidth={1.5} />
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-col items-center gap-4 mt-auto">
+    <div className="flex h-full w-full bg-transparent shrink-0 overflow-hidden select-none">
+      {/* Activity Bar Rail */}
+      <div className="w-14 bg-[#090d16]/90 border border-indigo-500/20 rounded-2xl backdrop-blur-xl flex flex-col items-center py-4 gap-4 shrink-0 z-20 shadow-xl shadow-indigo-950/20 m-1 my-2">
+        {/* Workspace Home Link */}
+        <Link 
+          href="/dashboard"
+          className="p-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-all group relative"
+          title="Workspace Dashboard"
+        >
+          <Home size={19} strokeWidth={1.75} />
+          <div className="absolute left-full ml-3 px-2.5 py-1 bg-[#090d16] border border-indigo-500/30 text-white text-[11px] rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap">
+            Workspace Dashboard
+          </div>
+        </Link>
+
+        <div className="w-8 h-[1px] bg-indigo-500/20 my-0.5"></div>
+
+        <div className="flex-1 flex flex-col items-center gap-3">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id && isExpanded;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab.id)}
+                className={`p-2.5 rounded-xl transition-all relative group ${
+                  isActive
+                    ? "text-white bg-indigo-600/20 border border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.35)]"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border border-transparent"
+                }`}
+                title={tab.label}
+              >
+                <Icon size={19} strokeWidth={1.75} />
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-to-b from-indigo-400 to-purple-500 rounded-r-full shadow-[0_0_8px_#6366f1]" />
+                )}
+                {/* Tooltip */}
+                <div className="absolute left-full ml-3 px-2.5 py-1 bg-[#090d16] border border-indigo-500/30 text-white text-[11px] rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap font-sans">
+                  {tab.label}
+                </div>
+              </button>
+            );
+          })}
+
+          {/* Quick Run Code Toggle Action */}
           <button
-            onClick={() => setActiveTab("settings")}
-            className={`p-2 rounded-lg transition-colors ${
-              activeTab === "settings"
-                ? "text-accent bg-accent/10"
-                : "text-foreground/50 hover:text-foreground hover:bg-foreground/5"
+            onClick={() => emitEvent("run:start")}
+            className="p-2.5 rounded-xl text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/30 border border-transparent transition-all relative group"
+            title="Execute Code (Run)"
+          >
+            <Play size={19} strokeWidth={1.75} fill="currentColor" />
+            <div className="absolute left-full ml-3 px-2.5 py-1 bg-[#090d16] border border-emerald-500/30 text-emerald-300 text-[11px] rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap font-sans">
+              Run Code
+            </div>
+          </button>
+        </div>
+
+        <div className="flex flex-col items-center gap-3 mt-auto">
+          <button
+            onClick={() => handleTabClick("settings")}
+            className={`p-2.5 rounded-xl transition-all relative group ${
+              activeTab === "settings" && isExpanded
+                ? "text-white bg-indigo-600/20 border border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.35)]"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border border-transparent"
             }`}
             title="Settings"
           >
-            <SettingsIcon size={22} strokeWidth={1.5} />
+            <SettingsIcon size={19} strokeWidth={1.75} />
+            {activeTab === "settings" && isExpanded && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-to-b from-indigo-400 to-purple-500 rounded-r-full shadow-[0_0_8px_#6366f1]" />
+            )}
+            <div className="absolute left-full ml-3 px-2.5 py-1 bg-[#090d16] border border-indigo-500/30 text-white text-[11px] rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap font-sans">
+              Settings
+            </div>
           </button>
         </div>
       </div>
 
       {/* Primary Sidebar Panel */}
-      <div className="w-64 bg-sidebar flex flex-col">
-        <div className="h-10 flex items-center px-4 font-semibold text-xs tracking-wider text-foreground/70 uppercase">
-          {tabs.find((t) => t.id === activeTab)?.label}
+      <div className={`flex flex-col bg-[#090d16]/85 border border-indigo-500/20 rounded-2xl backdrop-blur-2xl h-[calc(100%-16px)] my-2 mr-2 shadow-2xl shadow-indigo-950/30 transition-all duration-300 ${isExpanded ? 'w-[260px] opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
+        <div className="h-10 flex items-center justify-between px-4 font-bold text-[10px] tracking-widest text-indigo-400 uppercase border-b border-indigo-500/20 shrink-0 font-mono">
+          <span className="flex items-center gap-1.5">
+            <Sparkles size={12} className="text-cyan-400" />
+            {activeTab === "settings" ? "Settings" : tabs.find((t) => t.id === activeTab)?.label}
+          </span>
         </div>
 
         {activeTab === "explorer" && workspace && (
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto no-scrollbar">
             <ExplorerTree workspace={workspace} />
           </div>
         )}
 
-        {activeTab === "source-control" && workspace && (
-          <div className="flex-1 overflow-y-auto">
-            <SourceControlPanel workspace={workspace} />
-          </div>
-        )}
-
         {activeTab === "search" && workspace && (
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto no-scrollbar">
             <SearchPanel workspace={workspace} />
           </div>
         )}
 
+        {activeTab === "source-control" && workspace && (
+          <div className="flex-1 overflow-y-auto no-scrollbar">
+            <SourceControlPanel workspace={workspace} />
+          </div>
+        )}
+
         {activeTab === "extensions" && (
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto no-scrollbar">
             <ExtensionsPanel />
           </div>
         )}
 
         {activeTab === "settings" && (
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto no-scrollbar">
             <SettingsPanel />
           </div>
         )}
 
-        {activeTab !== "explorer" && activeTab !== "source-control" && activeTab !== "search" && activeTab !== "extensions" && activeTab !== "settings" && (
-          <div className="p-4 text-xs text-foreground/50 text-center">
-            Placeholder for {activeTab} functionality.
+        {activeTab !== "explorer" && activeTab !== "search" && activeTab !== "settings" && activeTab !== "source-control" && activeTab !== "extensions" && (
+          <div className="p-4 text-xs text-zinc-500 text-center font-mono">
+            Coming soon.
           </div>
         )}
       </div>
@@ -107,39 +180,80 @@ export function Sidebar({ workspace }: SidebarProps) {
 function ExplorerTree({ workspace }: { workspace: ReturnType<typeof useWorkspace> }) {
   const [isProjectOpen, setIsProjectOpen] = useState(true);
 
-  const handleCreateFile = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  useListenEvent("file:new-file", () => {
     const name = prompt("Enter file name:");
     if (name) workspace.createFile(name);
-  };
+  });
 
-  const handleCreateFolder = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  useListenEvent("file:new-folder", () => {
     const name = prompt("Enter folder name:");
     if (name) workspace.createFolder(name);
+  });
+
+  const handleCreateFile = async (e: React.MouseEvent, parentPath?: string) => {
+    e.stopPropagation();
+    const name = prompt("Enter file name:");
+    if (name) {
+      const fullPath = parentPath ? `${parentPath}/${name}` : name;
+      workspace.createFile(fullPath);
+    }
+  };
+
+  const handleCreateFolder = async (e: React.MouseEvent, parentPath?: string) => {
+    e.stopPropagation();
+    const name = prompt("Enter folder name:");
+    if (name) {
+      const fullPath = parentPath ? `${parentPath}/${name}` : name;
+      workspace.createFolder(fullPath);
+    }
+  };
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    workspace.downloadProject();
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col p-1">
       <div
         onClick={() => setIsProjectOpen(!isProjectOpen)}
-        className="w-full flex items-center justify-between px-2 py-1.5 text-sm font-medium hover:bg-foreground/5 transition-colors text-foreground/90 cursor-pointer group"
+        className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold hover:bg-white/5 transition-colors text-zinc-200 cursor-pointer group rounded-xl border border-transparent hover:border-indigo-500/20"
       >
-        <div className="flex items-center gap-1">
-          {isProjectOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-          <span className="truncate">BOSSgt-Project</span>
+        <div className="flex items-center gap-1.5 font-mono">
+          {isProjectOpen ? <ChevronDown size={14} className="text-indigo-400" /> : <ChevronRight size={14} className="text-zinc-500" />}
+          <span className="truncate tracking-wide text-white">WORKSPACE</span>
+          <span className="text-[10px] text-zinc-500 font-normal">/ BOSSgt-Project</span>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={handleCreateFile} className="p-0.5 hover:bg-foreground/10 rounded" title="New File"><Plus size={14} /></button>
-          <button onClick={handleCreateFolder} className="p-0.5 hover:bg-foreground/10 rounded" title="New Folder"><FolderPlus size={14} /></button>
+          <button onClick={(e) => handleCreateFile(e)} className="p-1 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white" title="New File"><Plus size={13} /></button>
+          <button onClick={(e) => handleCreateFolder(e)} className="p-1 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white" title="New Folder"><FolderPlus size={13} /></button>
+          <button onClick={handleDownload} className="p-1 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white" title="Download Project"><Download size={13} /></button>
         </div>
       </div>
 
       {isProjectOpen && (
-        <div className="flex flex-col mt-1">
-          {workspace.fileTree.map(node => (
-            <TreeNode key={node.path} node={node} level={1} workspace={workspace} />
-          ))}
+        <div className="flex flex-col mt-1 space-y-0.5">
+          {workspace.fileTree.filter((n: FileNode) => n.name !== '.keep').length === 0 ? (
+            <div className="px-4 py-6 flex flex-col items-center justify-center text-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <Files size={20} />
+              </div>
+              <div>
+                <p className="text-xs text-zinc-300 font-medium mb-1">No workspace files.</p>
+                <p className="text-[10px] text-zinc-500 mb-3 max-w-[160px]">Create a file to start coding in the Neural Forge.</p>
+              </div>
+              <button 
+                onClick={(e) => handleCreateFile(e)}
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all"
+              >
+                Create File
+              </button>
+            </div>
+          ) : (
+            workspace.fileTree.filter((n: FileNode) => n.name !== '.keep').map((node: FileNode) => (
+              <TreeNode key={node.path} node={node} level={1} workspace={workspace} />
+            ))
+          )}
         </div>
       )}
     </div>
@@ -149,7 +263,12 @@ function ExplorerTree({ workspace }: { workspace: ReturnType<typeof useWorkspace
 function TreeNode({ node, level, workspace }: { node: FileNode, level: number, workspace: ReturnType<typeof useWorkspace> }) {
   const [isOpen, setIsOpen] = useState(false);
   const isActive = workspace.activeFilePath === node.path;
-  const paddingLeft = `${level * 12 + 16}px`;
+  
+  // Check if file is dirty / modified
+  const openFileObj = workspace.openFiles.find((f: any) => f.path === node.path);
+  const isDirty = openFileObj ? openFileObj.content !== openFileObj.savedContent : false;
+  
+  const paddingLeft = `${level * 10 + 12}px`;
 
   const handleToggle = () => {
     if (node.type === 'dir') {
@@ -170,7 +289,6 @@ function TreeNode({ node, level, workspace }: { node: FileNode, level: number, w
     e.stopPropagation();
     const newName = prompt("Enter new name:", node.name);
     if (newName && newName !== node.name) {
-      // Very basic path rename logic. We simply replace the basename.
       const parentDir = node.path.substring(0, node.path.lastIndexOf('/'));
       const newPath = parentDir ? `${parentDir}/${newName}` : newName;
       workspace.renamePath(node.path, newPath);
@@ -178,40 +296,67 @@ function TreeNode({ node, level, workspace }: { node: FileNode, level: number, w
   };
 
   const getIcon = () => {
-    if (node.type === 'dir') return <FolderOpen size={15} className="text-blue-400" />;
-    if (node.name.endsWith('.py')) return <FileCode size={15} className="text-blue-500" />;
-    if (node.name.endsWith('.js') || node.name.endsWith('.ts')) return <FileCode size={15} className="text-yellow-400" />;
-    if (node.name.endsWith('.c') || node.name.endsWith('.cpp')) return <FileCode size={15} className="text-purple-400" />;
-    return <FileIcon size={15} className="text-gray-400" />;
+    if (node.type === 'dir') return <FolderOpen size={14} className="text-indigo-400" />;
+    if (node.name.endsWith('.py')) return <FileCode size={14} className="text-blue-400" />;
+    if (node.name.endsWith('.js') || node.name.endsWith('.ts') || node.name.endsWith('.tsx') || node.name.endsWith('.jsx')) return <FileCode size={14} className="text-amber-400" />;
+    if (node.name.endsWith('.c') || node.name.endsWith('.cpp')) return <FileCode size={14} className="text-cyan-400" />;
+    if (node.name.endsWith('.rs')) return <FileCode size={14} className="text-orange-400" />;
+    if (node.name.endsWith('.json') || node.name.endsWith('.md')) return <FileCode size={14} className="text-purple-400" />;
+    return <FileIcon size={14} className="text-zinc-400" />;
   };
 
   return (
     <>
       <div
         onClick={handleToggle}
-        className={`flex items-center justify-between py-1.5 pr-2 text-sm cursor-pointer group ${
-          isActive ? "bg-accent/10 text-accent border-l-2 border-accent" : "hover:bg-foreground/5 text-foreground/80 border-l-2 border-transparent"
+        className={`flex items-center justify-between py-1.5 pr-2 text-xs rounded-xl cursor-pointer transition-all group ${
+          isActive 
+            ? "bg-indigo-600/20 text-white font-medium border-l-2 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]" 
+            : "hover:bg-white/5 text-zinc-300 border-l-2 border-transparent"
         }`}
-        style={{ paddingLeft: isActive ? `calc(${paddingLeft} - 2px)` : paddingLeft }}
+        style={{ paddingLeft }}
         title={node.path}
       >
         <div className="flex items-center gap-1.5 truncate">
           {node.type === 'dir' && (
-            <span className="text-foreground/50">
-              {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <span className="text-zinc-500">
+              {isOpen ? <ChevronDown size={13} className="text-indigo-400" /> : <ChevronRight size={13} />}
             </span>
           )}
           {getIcon()}
           <span className="truncate">{node.name}</span>
+          {isDirty && (
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0 ml-1" title="Unsaved changes"></span>
+          )}
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={handleRename} className="p-0.5 hover:bg-foreground/10 rounded text-foreground/50 hover:text-foreground" title="Rename"><Edit2 size={12} /></button>
-          <button onClick={handleDelete} className="p-0.5 hover:bg-red-500/20 rounded text-foreground/50 hover:text-red-400" title="Delete"><Trash2 size={12} /></button>
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          {node.type === 'dir' && (
+            <>
+              <button onClick={async (e) => {
+                e.stopPropagation();
+                const name = prompt("Enter file name:");
+                if (name) {
+                  workspace.createFile(`${node.path}/${name}`);
+                  setIsOpen(true);
+                }
+              }} className="p-1 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white" title="New File"><Plus size={11} /></button>
+              <button onClick={async (e) => {
+                e.stopPropagation();
+                const name = prompt("Enter folder name:");
+                if (name) {
+                  workspace.createFolder(`${node.path}/${name}`);
+                  setIsOpen(true);
+                }
+              }} className="p-1 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white" title="New Folder"><FolderPlus size={11} /></button>
+            </>
+          )}
+          <button onClick={handleRename} className="p-1 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white" title="Rename"><Edit2 size={11} /></button>
+          <button onClick={handleDelete} className="p-1 hover:bg-red-500/20 rounded-lg text-zinc-400 hover:text-red-400" title="Delete"><Trash2 size={11} /></button>
         </div>
       </div>
       {node.type === 'dir' && isOpen && node.children && (
-        <div className="flex flex-col">
-          {node.children.map(child => (
+        <div className="flex flex-col space-y-0.5">
+          {node.children.filter(n => n.name !== '.keep').map(child => (
             <TreeNode key={child.path} node={child} level={level + 1} workspace={workspace} />
           ))}
         </div>
@@ -241,7 +386,7 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
       const res = await fetch("/api/git", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "status" })
+        body: JSON.stringify({ action: "status", projectId: new URLSearchParams(window.location.search).get("projectId") })
       });
       if (res.ok) {
         const data = await res.json();
@@ -253,7 +398,7 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
           const rem = await fetch("/api/git", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "remotes" })
+            body: JSON.stringify({ action: "remotes", projectId: new URLSearchParams(window.location.search).get("projectId") })
           });
           const remData = await rem.json();
           setRemoteUrl(remData.remote);
@@ -262,7 +407,7 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
             const ab = await fetch("/api/git", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "aheadBehind" })
+              body: JSON.stringify({ action: "aheadBehind", projectId: new URLSearchParams(window.location.search).get("projectId") })
             });
             const abData = await ab.json();
             setAhead(abData.ahead);
@@ -272,7 +417,7 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
           const logRes = await fetch("/api/git", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "log" })
+            body: JSON.stringify({ action: "log", projectId: new URLSearchParams(window.location.search).get("projectId") })
           });
           const logData = await logRes.json();
           setLogs(logData.logs || []);
@@ -293,7 +438,7 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
     await fetch("/api/git", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "init" })
+      body: JSON.stringify({ action: "init", projectId: new URLSearchParams(window.location.search).get("projectId") })
     });
     await fetchStatus();
     setIsLoading(false);
@@ -305,7 +450,7 @@ function SourceControlPanel({ workspace }: { workspace: ReturnType<typeof useWor
       const res = await fetch("/api/git", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, payload })
+        body: JSON.stringify({ action, payload, projectId: new URLSearchParams(window.location.search).get("projectId") })
       });
       const data = await res.json();
 
@@ -581,11 +726,50 @@ function SearchPanel({ workspace }: { workspace: ReturnType<typeof useWorkspace>
       return;
     }
     setIsSearching(true);
+    
+    const currentProjectId = workspace.projectId || new URLSearchParams(window.location.search).get('projectId');
+    
+    if (!currentProjectId) {
+      // Local client-side search fallback
+      try {
+        const localFiles = JSON.parse(localStorage.getItem('bossgt_files') || '[]');
+        let regex: RegExp;
+        if (isRegex) {
+          regex = new RegExp(query, matchCase ? "g" : "gi");
+        } else {
+          const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          regex = new RegExp(escapedQuery, matchCase ? "g" : "gi");
+        }
+
+        const localResults: {file: string, line: number, text: string}[] = [];
+        for (const file of localFiles) {
+          if (!file.content) continue;
+          const lines = file.content.split('\n');
+          lines.forEach((lineText: string, i: number) => {
+            if (regex.test(lineText)) {
+              localResults.push({
+                file: file.path,
+                line: i + 1,
+                text: lineText
+              });
+              // Reset regex lastIndex since we are testing line by line
+              regex.lastIndex = 0;
+            }
+          });
+        }
+        setResults(localResults);
+      } catch (e) {
+        console.error("Local search error", e);
+      }
+      setIsSearching(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "search", query, isRegex, matchCase })
+        body: JSON.stringify({ action: "search", query, isRegex, matchCase, projectId: currentProjectId })
       });
       const data = await res.json();
       setResults(data.results || []);
@@ -597,11 +781,54 @@ function SearchPanel({ workspace }: { workspace: ReturnType<typeof useWorkspace>
 
   const handleReplace = async (filePaths: string[]) => {
     if (!query || filePaths.length === 0) return;
+    const currentProjectId = workspace.projectId || new URLSearchParams(window.location.search).get('projectId');
+    
+    if (!currentProjectId) {
+      // Local client-side replace fallback
+      try {
+        const localFiles = JSON.parse(localStorage.getItem('bossgt_files') || '[]');
+        let regex: RegExp;
+        if (isRegex) {
+          regex = new RegExp(query, matchCase ? "g" : "gi");
+        } else {
+          const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          regex = new RegExp(escapedQuery, matchCase ? "g" : "gi");
+        }
+        
+        let modified = false;
+        const updatedFiles = localFiles.map((file: any) => {
+          if (filePaths.includes(file.path) && file.content) {
+            const newContent = file.content.replace(regex, replaceWith);
+            if (newContent !== file.content) {
+              modified = true;
+              return { ...file, content: newContent };
+            }
+          }
+          return file;
+        });
+
+        if (modified) {
+          localStorage.setItem('bossgt_files', JSON.stringify(updatedFiles));
+          // Refresh the file if it's currently open
+          if (filePaths.includes(workspace.activeFilePath || '')) {
+             const updated = updatedFiles.find((f: any) => f.path === workspace.activeFilePath);
+             if (updated) {
+               window.dispatchEvent(new CustomEvent('workspace-file-updated', { detail: { path: updated.path, content: updated.content }}));
+             }
+          }
+          handleSearch();
+        }
+      } catch (e) {
+        console.error("Local replace error", e);
+      }
+      return;
+    }
+
     try {
       const res = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "replace", query, replaceWith, isRegex, matchCase, filePaths })
+        body: JSON.stringify({ action: "replace", query, replaceWith, isRegex, matchCase, filePaths, projectId: currentProjectId })
       });
       const data = await res.json();
       if (data.success) {
@@ -690,9 +917,11 @@ function SearchPanel({ workspace }: { workspace: ReturnType<typeof useWorkspace>
               <div 
                 key={i} 
                 className="px-3 py-1 text-[11px] font-mono text-foreground/60 hover:bg-foreground/5 hover:text-foreground cursor-pointer flex gap-2 truncate"
-                onClick={() => {
-                  workspace.openFile(file, file.split('/').pop() || file);
-                  window.dispatchEvent(new CustomEvent('editor-goto-line', { detail: { file, line: res.line }}));
+                onClick={async () => {
+                  await workspace.openFile(file, file.split('/').pop() || file);
+                  setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('editor-goto-line', { detail: { file, line: res.line }}));
+                  }, 150);
                 }}
               >
                 <span className="text-accent/70 shrink-0">{res.line}</span>
@@ -712,16 +941,22 @@ function SearchPanel({ workspace }: { workspace: ReturnType<typeof useWorkspace>
 }
 
 function ExtensionsPanel() {
-  const { settings, toggleExtension } = useSettings();
   const [query, setQuery] = useState("");
 
-  const filtered = settings.extensions.filter(ext => 
+  const builtinEngines = [
+    { id: "ext-python", name: "Python Language Support", description: "Built-in execution engine, Pylance IntelliSense, and NumPy/SciPy sandbox compatibility.", version: "3.11.0", status: "Built-in" },
+    { id: "ext-node", name: "JavaScript & TypeScript", description: "V8 JavaScript engine, TS compiler diagnostics, and Node.js execution toolchain.", version: "20.x", status: "Built-in" },
+    { id: "ext-cpp", name: "C & C++ Native Engine", description: "GCC/Clang compilation pipeline, stdc++17 header support, and GDB diagnostics.", version: "13.2.0", status: "Built-in" },
+    { id: "ext-java", name: "Java JDK Runtime", description: "OpenJDK 17 compilation & JVM runtime execution with standard library support.", version: "17.0", status: "Built-in" },
+    { id: "ext-rust", name: "Rust Toolchain", description: "rustc compiler engine, Cargo package resolution, and memory-safe sandbox execution.", version: "1.75.0", status: "Built-in" },
+    { id: "ext-go", name: "Go Compiler", description: "Go toolchain runtime with fast single-pass compilation and goroutine support.", version: "1.22.0", status: "Built-in" },
+    { id: "ext-web", name: "Web Preview Engine", description: "Live HTML5, CSS3, and DOM script iframe preview container.", version: "1.0.0", status: "Built-in" }
+  ];
+
+  const filtered = builtinEngines.filter(ext => 
     ext.name.toLowerCase().includes(query.toLowerCase()) || 
     ext.description.toLowerCase().includes(query.toLowerCase())
   );
-
-  const installed = filtered.filter(e => e.installed);
-  const recommended = filtered.filter(e => !e.installed);
 
   return (
     <div className="flex flex-col h-full font-sans p-3">
@@ -729,7 +964,7 @@ function ExtensionsPanel() {
         <div className="relative flex items-center bg-background border border-panel-border rounded focus-within:border-accent">
           <input
             type="text"
-            placeholder="Search Extensions in Marketplace"
+            placeholder="Search Built-in Runtimes"
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="w-full bg-transparent p-1.5 text-xs text-foreground outline-none"
@@ -738,81 +973,28 @@ function ExtensionsPanel() {
       </div>
 
       <div className="flex-1 overflow-y-auto -mx-3">
-        {installed.length > 0 && (
-          <div className="mb-4">
-            <div className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-foreground/50">
-              Installed
-            </div>
-            {installed.map(ext => (
-              <div key={ext.id} className="flex gap-3 p-3 hover:bg-foreground/5 border-b border-panel-border/30">
-                <div className="w-8 h-8 rounded bg-accent/20 flex items-center justify-center shrink-0">
-                  <Blocks size={16} className="text-accent" />
-                </div>
-                <div className="flex flex-col flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-xs text-foreground truncate">{ext.name}</span>
-                    <span className="text-[10px] text-foreground/50">v{ext.version}</span>
-                  </div>
-                  <span className="text-[10px] text-foreground/70 mt-1 line-clamp-2 leading-tight">
-                    {ext.description}
-                  </span>
-                  <div className="flex gap-2 mt-2">
-                    <button 
-                      onClick={() => toggleExtension(ext.id, 'enabled', !ext.enabled)}
-                      className={`px-2 py-0.5 rounded text-[10px] border transition-colors ${ext.enabled ? 'border-accent text-accent hover:bg-accent/10' : 'border-foreground/30 text-foreground/50 hover:bg-foreground/10'}`}
-                    >
-                      {ext.enabled ? "Disable" : "Enable"}
-                    </button>
-                    <button 
-                      onClick={() => {
-                        toggleExtension(ext.id, 'installed', false);
-                        toggleExtension(ext.id, 'enabled', false);
-                      }}
-                      className="px-2 py-0.5 rounded text-[10px] border border-red-900 text-red-400 hover:bg-red-900/20 transition-colors"
-                    >
-                      Uninstall
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-foreground/50 mb-2">
+          Built-in Language Runtimes ({filtered.length})
+        </div>
 
-        {recommended.length > 0 && (
-          <div className="mb-4">
-            <div className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-foreground/50">
-              Recommended
+        {filtered.map(ext => (
+          <div key={ext.id} className="flex gap-3 p-3 hover:bg-foreground/5 border-b border-panel-border/30">
+            <div className="w-8 h-8 rounded bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+              <Blocks size={16} className="text-indigo-400" />
             </div>
-            {recommended.map(ext => (
-              <div key={ext.id} className="flex gap-3 p-3 hover:bg-foreground/5 border-b border-panel-border/30">
-                <div className="w-8 h-8 rounded bg-foreground/5 flex items-center justify-center shrink-0">
-                  <Blocks size={16} className="text-foreground/40" />
-                </div>
-                <div className="flex flex-col flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-xs text-foreground truncate">{ext.name}</span>
-                    <span className="text-[10px] text-foreground/50">v{ext.version}</span>
-                  </div>
-                  <span className="text-[10px] text-foreground/70 mt-1 line-clamp-2 leading-tight">
-                    {ext.description}
-                  </span>
-                  <div className="flex gap-2 mt-2">
-                    <button 
-                      onClick={() => {
-                        toggleExtension(ext.id, 'installed', true);
-                        toggleExtension(ext.id, 'enabled', true);
-                      }}
-                      className="px-3 py-0.5 bg-accent text-white rounded text-[10px] font-medium hover:bg-accent-hover transition-colors"
-                    >
-                      Install
-                    </button>
-                  </div>
-                </div>
+            <div className="flex flex-col flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-xs text-foreground truncate">{ext.name}</span>
+                <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[9px]">
+                  {ext.status}
+                </span>
               </div>
-            ))}
+              <span className="text-[10px] text-foreground/70 mt-1 leading-relaxed">
+                {ext.description}
+              </span>
+            </div>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

@@ -1,34 +1,40 @@
 @import "tailwindcss";
+@import "xterm/css/xterm.css";
 
 :root {
-  --background: #09090b; /* Zinc 950 */
-  --foreground: #fafafa; /* Zinc 50 */
+  --background: #030408; /* Deep Neural Space Black */
+  --foreground: #f8fafc; /* Crisp Slate 50 */
   
-  --panel-bg: #18181b; /* Zinc 900 */
-  --panel-border: #27272a; /* Zinc 800 */
+  --panel-bg: rgba(10, 14, 26, 0.75); /* Translucent Glass */
+  --panel-border: rgba(99, 102, 241, 0.18); /* Indigo Glass Glow */
   
   --accent: #6366f1; /* Indigo 500 */
   --accent-hover: #4f46e5; /* Indigo 600 */
+  --accent-cyan: #06b6d4; /* Cyan 500 */
+  --accent-purple: #a855f7; /* Purple 500 */
   
-  --activity-bar-bg: #09090b; /* Zinc 950 */
-  --sidebar-bg: #18181b; /* Zinc 900 */
-  --editor-bg: #09090b; /* Zinc 950 - match background */
-  --status-bar-bg: #6366f1; /* Indigo 500 */
+  --activity-bar-bg: rgba(7, 10, 18, 0.85); 
+  --sidebar-bg: rgba(9, 13, 23, 0.85); 
+  --editor-bg: rgba(5, 7, 13, 0.95); 
+  --status-bar-bg: #4f46e5; 
   --status-bar-fg: #ffffff;
+
+  --cursor-x: 50vw;
+  --cursor-y: 50vh;
 }
 
 .light {
-  --background: #ffffff; 
-  --foreground: #18181b; 
+  --background: #f8fafc; 
+  --foreground: #0f172a; 
   
-  --panel-bg: #f4f4f5; 
-  --panel-border: #e4e4e7; 
+  --panel-bg: rgba(255, 255, 255, 0.85); 
+  --panel-border: rgba(99, 102, 241, 0.25); 
   
   --accent: #4f46e5; 
   --accent-hover: #4338ca; 
   
-  --activity-bar-bg: #fafafa; 
-  --sidebar-bg: #f4f4f5; 
+  --activity-bar-bg: #f1f5f9; 
+  --sidebar-bg: #f8fafc; 
   --editor-bg: #ffffff; 
   --status-bar-bg: #4f46e5; 
   --status-bar-fg: #ffffff;
@@ -58,29 +64,143 @@ body {
   @apply overflow-hidden antialiased;
 }
 
-::selection {
-  background-color: rgba(99, 102, 241, 0.3); /* accent/30 */
+/* Global Subtle Neural Atmosphere with Mouse-Reactive Glow */
+.neural-atmosphere {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: 
+    radial-gradient(600px circle at var(--cursor-x, 50vw) var(--cursor-y, 50vh), rgba(99, 102, 241, 0.07), transparent 80%),
+    radial-gradient(800px circle at 15% 10%, rgba(168, 85, 247, 0.05), transparent 70%),
+    radial-gradient(900px circle at 85% 90%, rgba(6, 182, 212, 0.05), transparent 70%),
+    #030408;
 }
 
-/* Custom scrollbar for webkit */
+/* Subtle Cyber Grid Pattern */
+.neural-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: 
+    linear-gradient(to right, rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.8;
+}
+
+::selection {
+  background-color: rgba(99, 102, 241, 0.35);
+  color: #ffffff;
+}
+
+/* Custom scrollbar for Neural Forge */
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: #3f3f46; /* Zinc 700 */
-  border-radius: 6px;
-  border: 3px solid var(--sidebar-bg); /* Match sidebar background to look floating */
-}
-.light ::-webkit-scrollbar-thumb {
-  background-color: #d4d4d8; 
+  background-color: rgba(99, 102, 241, 0.25);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #52525b; /* Zinc 600 */
+  background-color: rgba(99, 102, 241, 0.5);
 }
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Glass panel glow classes */
+.glass-panel {
+  background: rgba(10, 14, 26, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px 0 rgba(99, 102, 241, 0.05);
+}
+
+.glass-panel-interactive {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-panel-interactive:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.6), 0 0 25px 0 rgba(99, 102, 241, 0.12);
+}
+
+/* Glowing Neon Text & Badges */
+.neon-glow-indigo {
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+}
+.neon-glow-cyan {
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+}
+
+/* Keyframe Animations */
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(1deg); }
+}
+
+@keyframes floatMedium {
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  50% { transform: translateY(-18px) translateX(8px); }
+}
+
+@keyframes floatReverse {
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  50% { transform: translateY(14px) translateX(-6px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.35; filter: blur(40px); }
+  50% { opacity: 0.65; filter: blur(55px); }
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 3s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: floatSlow 8s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: floatMedium 11s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: floatReverse 9s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-slow,
+  .animate-float-medium,
+  .animate-float-reverse,
+  .animate-pulse-glow,
+  .animate-pulse-subtle {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+

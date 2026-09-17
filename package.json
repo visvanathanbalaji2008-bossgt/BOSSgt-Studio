@@ -3,23 +3,37 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "NODE_ENV=production next build",
+    "dev": "next dev --webpack",
+    "build": "NODE_ENV=production next build --webpack",
     "start": "NODE_ENV=production next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:languages": "npx -y tsx scratch/test_languages.ts",
+    "postinstall": "node scripts/patch-xterm.js"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.45.0",
+    "file-saver": "^2.0.5",
+    "idb-keyval": "^6.3.0",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.31.0",
     "next": "16.3.1",
+    "node-pty": "^1.1.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "uuid": "^10.0.0",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
     "tailwindcss": "^4",

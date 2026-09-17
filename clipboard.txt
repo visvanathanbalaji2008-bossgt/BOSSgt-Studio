@@ -1,0 +1,15 @@
+I have copied my Supabase Project URL and Publishable key.
+
+Please create the file:
+
+/Users/bossgt/Desktop/BOSSgt-Studio/.env.local
+
+and configure the Supabase credentials there.
+
+Do not print or expose the actual credentials in your response.
+Do not use the secret/service-role key.
+Make sure .env.local is in .gitignore.
+
+Then restart the Next.js development server and verify the Supabase client works.
+
+Do not deploy yet.

@@ -5,6 +5,7 @@ import Editor from "@monaco-editor/react";
 import { Check, Columns, ChevronsRight } from "lucide-react";
 import type { editor } from "monaco-editor";
 import { useSettings } from "@/hooks/useSettings";
+import { useListenEvent } from "@/lib/events";
 
 interface CodeEditorProps {
   value: string;
@@ -36,6 +37,62 @@ export function CodeEditor({
     window.addEventListener('editor-goto-line', handleGoToLine);
     return () => window.removeEventListener('editor-goto-line', handleGoToLine);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      editorRef.current = null;
+    };
+  }, []);
+
+  useListenEvent("edit:undo", () => {
+    if (editorRef.current) {
+      try { editorRef.current.trigger('keyboard', 'undo', null); } catch (e) {}
+    }
+  });
+  useListenEvent("edit:redo", () => {
+    if (editorRef.current) {
+      try { editorRef.current.trigger('keyboard', 'redo', null); } catch (e) {}
+    }
+  });
+  useListenEvent("edit:cut", () => {
+    if (editorRef.current) {
+      try {
+        editorRef.current.focus();
+        document.execCommand('cut');
+      } catch (e) {}
+    }
+  });
+  useListenEvent("edit:copy", () => {
+    if (editorRef.current) {
+      try {
+        editorRef.current.focus();
+        document.execCommand('copy');
+      } catch (e) {}
+    }
+  });
+  useListenEvent("edit:paste", () => {
+    if (editorRef.current) {
+      try {
+        editorRef.current.focus();
+        document.execCommand('paste');
+      } catch (e) {}
+    }
+  });
+  useListenEvent("edit:select-all", () => {
+    if (editorRef.current) {
+      try { editorRef.current.trigger('keyboard', 'editor.action.selectAll', null); } catch (e) {}
+    }
+  });
+  useListenEvent("edit:find", () => {
+    if (editorRef.current) {
+      try { editorRef.current.trigger('keyboard', 'actions.find', null); } catch (e) {}
+    }
+  });
+  useListenEvent("edit:replace", () => {
+    if (editorRef.current) {
+      try { editorRef.current.trigger('keyboard', 'editor.action.startFindReplaceAction', null); } catch (e) {}
+    }
+  });
 
   const hasConflict = useMemo(() => conflictRegex.test(value), [value]);
 
@@ -79,6 +136,14 @@ export function CodeEditor({
         onChange={onChange}
         onMount={(editor) => {
           editorRef.current = editor;
+          editor.onDidDispose(() => {
+            editorRef.current = null;
+          });
+          editor.onDidChangeCursorPosition((e) => {
+            window.dispatchEvent(new CustomEvent('editor:cursor-change', {
+              detail: { line: e.position.lineNumber, col: e.position.column }
+            }));
+          });
         }}
         options={{
           minimap: { enabled: settings.editor.minimap },

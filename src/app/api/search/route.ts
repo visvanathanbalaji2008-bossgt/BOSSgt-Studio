@@ -3,14 +3,21 @@ import { NextResponse } from "next/server";
 import { promisify } from "util";
 import fs from "fs";
 import path from "path";
+import { syncWorkspaceToDisk } from "@/lib/workspace-sync";
 
 const execPromise = promisify(exec);
 
 export async function POST(req: Request) {
   try {
-    const root = process.cwd();
     const body = await req.json();
-    const { action, query, replaceWith, isRegex, matchCase, filePaths } = body;
+    const { action, query, replaceWith, isRegex, matchCase, filePaths, projectId } = body;
+
+    if (!projectId) {
+      return NextResponse.json({ error: "projectId is required" }, { status: 400 });
+    }
+    
+    // Sync to disk to ensure we have the latest files to search
+    const root = await syncWorkspaceToDisk(projectId);
 
     if (!query) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
@@ -51,6 +58,7 @@ export async function POST(req: Request) {
       let replaceCount = 0;
 
       for (const file of filePaths) {
+        // turbopackIgnore tells Next.js not to bundle the dynamic path
         const fullPath = path.join(/*turbopackIgnore: true*/ root, file);
         if (fs.existsSync(fullPath)) {
           const content = fs.readFileSync(fullPath, "utf-8");
@@ -71,6 +79,11 @@ export async function POST(req: Request) {
           }
         }
       }
+
+      // Sync changes back to Supabase!
+      // In a real app we might only sync the modified files, but this handles it simply
+      const { syncDiskToWorkspace } = await import("@/lib/workspace-sync");
+      await syncDiskToWorkspace(projectId);
 
       return NextResponse.json({ success: true, filesModified: replaceCount });
     }
