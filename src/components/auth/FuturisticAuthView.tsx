@@ -146,7 +146,9 @@ export function FuturisticAuthView({ initialMode = "login" }: FuturisticAuthView
         } else if (data?.session || data?.user) {
           establishSessionAndRedirect(email.trim());
         } else {
-          establishSessionAndRedirect(email.trim());
+          setError("Authentication failed. Please verify your email and password.");
+          setLoading(false);
+          return;
         }
       } else if (mode === "register") {
         if (!isPasswordValidForRegister) {
@@ -175,7 +177,9 @@ export function FuturisticAuthView({ initialMode = "login" }: FuturisticAuthView
         } else if (data?.session || data?.user) {
           establishSessionAndRedirect(email.trim());
         } else {
-          establishSessionAndRedirect(email.trim());
+          setSuccessMessage("Account created! Please check your email for confirmation or log in.");
+          setLoading(false);
+          return;
         }
       } else if (mode === "forgot") {
         if (!email.trim()) {
